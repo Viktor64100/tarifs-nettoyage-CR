@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grille Tarifaire - Nettoyage de Vitres</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1.6;
+            color: #0F222D;
+            background-color: #EBE7D9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            box-shadow: 0 0 20px rgba(15, 34, 45, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        h1, h2 {
+            font-family: 'Playfair Display', serif;
+            color: #0F222D;
+        }
+        h1 {
+            text-align: center;
+            padding: 40px 0;
+            margin: 0;
+            background: linear-gradient(45deg, #0F222D, #1a3c4d);
+            color: #EBE7D9;
+            font-size: 2.5em;
+            letter-spacing: 2px;
+        }
+        .section {
+            background-color: #0F222D;
+            color: #EBE7D9;
+            padding: 30px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #EBE7D9, #c9b995);
+        }
+        .section-light {
+            background-color: #EBE7D9;
+            color: #0F222D;
+        }
+        .section-light::before {
+            background: linear-gradient(90deg, #0F222D, #1a3c4d);
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 20px;
+            background-color: rgba(235, 231, 217, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(235, 231, 217, 0.2);
+        }
+        th {
+            background-color: rgba(15, 34, 45, 0.8);
+            color: #EBE7D9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .section-light table {
+            background-color: rgba(15, 34, 45, 0.05);
+        }
+        .section-light th {
+            background-color: rgba(235, 231, 217, 0.8);
+            color: #0F222D;
+        }
+        tr:hover {
+            background-color: rgba(235, 231, 217, 0.1);
+            transition: background-color 0.3s ease;
+        }
+        .section-light tr:hover {
+            background-color: rgba(15, 34, 45, 0.1);
+        }
+        .icon {
+            margin-right: 10px;
+            color: #c9b995;
+        }
+        .cta-button {
+            display: block;
+            width: 250px;
+            margin: 40px auto;
+            padding: 15px;
+            background: linear-gradient(45deg, #0F222D, #1a3c4d);
+            color: #EBE7D9;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(15, 34, 45, 0.2);
+        }
+        .cta-button:hover {
+            background: linear-gradient(45deg, #1a3c4d, #0F222D);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(15, 34, 45, 0.3);
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .gold-accent {
+            color: #c9b995;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grille Tarifaire - Nettoyage de Vitres</h1>
+
+        <div class="section">
+            <h2><i class="fas fa-home icon"></i>Résidentiel</h2>
+            <table>
+                <tr>
+                    <th>Type de Fenêtre</th>
+                    <th>Intérieur et Extérieur</th>
+                    <th>Extérieur seulement</th>
+                    <th>Accès difficile/très sales</th>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-window-maximize icon"></i>Petites (≤ 1 m²)</td>
+                    <td>7 €</td>
+                    <td>5 €</td>
+                    <td>10 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-window-restore icon"></i>Grandes (> 1 m²)</td>
+                    <td>12 €</td>
+                    <td>8 €</td>
+                    <td>15 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-door-open icon"></i>Baies Vitrées</td>
+                    <td>20 €</td>
+                    <td>15 €</td>
+                    <td>25 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-door-closed icon"></i>Portes-Fenêtres</td>
+                    <td>10 €</td>
+                    <td>7 €</td>
+                    <td>12 €</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-building icon"></i>Commercial</h2>
+            <table>
+                <tr>
+                    <th>Type de Fenêtre</th>
+                    <th>Intérieur et Extérieur</th>
+                    <th>Extérieur seulement</th>
+                    <th>Accès difficile/très sales</th>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-window-maximize icon"></i>Petites (≤ 1 m²)</td>
+                    <td>10 €</td>
+                    <td>7 €</td>
+                    <td>13 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-window-restore icon"></i>Grandes (> 1 m²)</td>
+                    <td>18 €</td>
+                    <td>12 €</td>
+                    <td>22 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-store icon"></i>Vitrines</td>
+                    <td>25 €</td>
+                    <td>18 €</td>
+                    <td>30 €</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-building icon"></i>Façades Vitrées</td>
+                    <td>8 €/m²</td>
+                    <td>6 €/m²</td>
+                    <td>10 €/m²</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section section-light">
+            <h2><i class="fas fa-plus-circle icon"></i>Services Additionnels</h2>
+            <ul>
+                <li><i class="fas fa-window-frame icon"></i>Nettoyage des Cadres de Fenêtres : <span class="gold-accent">+2 € par cadre</span></li>
+                <li><i class="fas fa-bug icon"></i>Nettoyage des Moustiquaires : <span class="gold-accent">+3 € par moustiquaire</span></li>
+                <li><i class="fas fa-shopify icon"></i>Nettoyage des Volets : <span class="gold-accent">+4 € par volet</span></li>
+            </ul>
+
+            <h2><i class="fas fa-calendar-alt icon"></i>Forfaits</h2>
+            <h3>Mensuels (4 nettoyages/mois)</h3>
+            <table>
+                <tr>
+                    <th>Type</th>
+                    <th>Résidentiel</th>
+                    <th>Commercial</th>
+                </tr>
+                <tr>
+                    <td>Petites Fenêtres</td>
+                    <td>25 € (30 € difficile/sale)</td>
+                    <td>35 € (40 € difficile/sale)</td>
+                </tr>
+                <tr>
+                    <td>Grandes Fenêtres</td>
+                    <td>40 € (50 € difficile/sale)</td>
+                    <td>60 € (75 € difficile/sale)</td>
+                </tr>
+                <tr>
+                    <td>Vitrines</td>
+                    <td>-</td>
+                    <td>90 € (100 € difficile/sale)</td>
+                </tr>
+                <tr>
+                    <td>Façades Vitrées</td>
+                    <td>-</td>
+                    <td>25 €/m² (35 €/m² difficile/sale)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-info-circle icon"></i>Remarques</h2>
+            <ul>
+                <li><strong class="gold-accent">Déplacement</strong> : Gratuit dans un rayon de 10 km, 0,50 € par km supplémentaire.</li>
+                <li><strong class="gold-accent">Tarifs de Groupe</strong> : Réduction de 10% pour 5 fenêtres ou plus nettoyées lors de la même intervention.</li>
+            </ul>
+        </div>
+
+        <a href="#" class="cta-button">Demander un devis exclusif</a>
+    </div>
+</body>
+</html>
