@@ -1,14 +1,21 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Mic, Square, Sparkles } from "lucide-react";
 import type { Prospect, InteractionType } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
 import { OUTCOMES, addDaysISO, fmtShortISO, todayISO, type Outcome } from "@/lib/call-outcomes";
+import { useSpeechRecognition } from "@/lib/use-speech-recognition";
 import { logCallOutcome } from "@/app/(app)/call/actions";
 
 type Step = "ready" | "outcome" | "schedule" | "finished";
+type AiSuggestion = {
+  summary: string;
+  tags: string[];
+  suggested_action: string | null;
+  suggested_follow_up_date: string | null;
+};
 
 export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const router = useRouter();
@@ -16,7 +23,9 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const [step, setStep] = useState<Step>("ready");
   const [pending, setPending] = useState<Outcome | null>(null);
   const [note, setNote] = useState("");
+  const [ai, setAi] = useState<AiSuggestion | null>(null);
   const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const p = queue[idx];
@@ -28,6 +37,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
 
   function advance() {
     setNote("");
+    setAi(null);
     setPending(null);
     if (idx + 1 < queue.length) {
       setIdx((i) => i + 1);
@@ -38,8 +48,19 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   }
 
   function commit(outcome: Outcome, followUpAt?: string | null) {
+    setError(null);
     startTransition(async () => {
-      await logCallOutcome(p.id, outcome.key as InteractionType, { note, followUpAt });
+      try {
+        await logCallOutcome(p.id, outcome.key as InteractionType, {
+          note,
+          followUpAt,
+          aiSummary: ai?.summary,
+          aiTags: ai?.tags,
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Impossible d'enregistrer ce résultat.");
+        return;
+      }
       const msg =
         outcome.kind === "won"
           ? "Rendez-vous enregistré 🎯"
@@ -109,6 +130,8 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
           </div>
         </div>
 
+        {error && <p className="text-red text-sm text-center mb-3">{error}</p>}
+
         {confirmMsg ? (
           <div className="text-center py-6">
             <span className="inline-flex items-center gap-2 bg-accent-soft text-accent-dk px-5 py-3 rounded-full text-[15px] font-semibold">
@@ -159,6 +182,8 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
               outcome={pending}
               note={note}
               setNote={setNote}
+              ai={ai}
+              setAi={setAi}
               pending={isPending}
               onConfirm={(iso) => commit(pending, iso)}
               onBack={() => setStep("outcome")}
@@ -174,6 +199,8 @@ function ScheduleStep({
   outcome,
   note,
   setNote,
+  ai,
+  setAi,
   pending,
   onConfirm,
   onBack,
@@ -181,6 +208,8 @@ function ScheduleStep({
   outcome: Outcome;
   note: string;
   setNote: (v: string) => void;
+  ai: AiSuggestion | null;
+  setAi: (v: AiSuggestion | null) => void;
   pending: boolean;
   onConfirm: (iso: string) => void;
   onBack: () => void;
@@ -192,6 +221,38 @@ function ScheduleStep({
     { label: "Dans 1 semaine", iso: addDaysISO(t, 7) },
   ];
   const [custom, setCustom] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const speech = useSpeechRecognition();
+
+  function toggleDictation() {
+    if (speech.listening) {
+      speech.stop();
+    } else {
+      setAi(null);
+      speech.start((text) => setNote(text));
+    }
+  }
+
+  async function summarize() {
+    if (!note.trim()) return;
+    setAiError(null);
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: note }),
+      });
+      if (!res.ok) throw new Error("Résumé IA indisponible pour le moment.");
+      const data = (await res.json()) as AiSuggestion;
+      setAi(data);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Résumé IA indisponible.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   return (
     <div>
@@ -212,6 +273,20 @@ function ScheduleStep({
             </span>
           </button>
         ))}
+        {ai?.suggested_follow_up_date && (
+          <button
+            onClick={() => onConfirm(ai.suggested_follow_up_date!)}
+            disabled={pending}
+            className="flex justify-between items-center bg-accent-soft border border-[#CBE6D8] rounded-2xl px-4 py-[15px] disabled:opacity-50"
+          >
+            <span className="text-[15.5px] font-medium text-accent-dk flex items-center gap-1.5">
+              <Sparkles size={14} /> Suggestion IA
+            </span>
+            <span className="text-accent-dk text-sm font-display flex items-center gap-1">
+              {fmtShortISO(ai.suggested_follow_up_date)} <ChevronRight size={15} />
+            </span>
+          </button>
+        )}
         <div className="flex gap-2 items-center">
           <input
             type="date"
@@ -229,13 +304,66 @@ function ScheduleStep({
           </button>
         </div>
       </div>
+
+      <div className="flex gap-2 mt-3.5">
+        {speech.supported && (
+          <button
+            onClick={toggleDictation}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-medium border ${
+              speech.listening ? "bg-red/10 border-red text-red" : "bg-card border-line text-ink"
+            }`}
+          >
+            {speech.listening ? <Square size={14} /> : <Mic size={15} />}
+            {speech.listening ? "Arrêter" : "Note vocale"}
+          </button>
+        )}
+        <button
+          onClick={summarize}
+          disabled={!note.trim() || aiLoading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-medium border border-line bg-card text-ink disabled:opacity-50"
+        >
+          <Sparkles size={15} className="text-accent" /> {aiLoading ? "…" : "Résumer avec l'IA"}
+        </button>
+      </div>
+
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
         rows={2}
-        placeholder="Note rapide (optionnel)…"
-        className="w-full mt-3.5 border border-line rounded-2xl px-3.5 py-3 text-sm resize-none bg-card"
+        placeholder="Note rapide, ou dictée à voix haute…"
+        className="w-full mt-2.5 border border-line rounded-2xl px-3.5 py-3 text-sm resize-none bg-card"
       />
+      {aiError && <p className="text-red text-xs mt-1.5">{aiError}</p>}
+
+      {ai && (
+        <div className="mt-2.5 bg-accent-soft border border-[#CBE6D8] rounded-2xl px-3.5 py-3">
+          <div className="flex items-center gap-1.5 text-accent-dk text-xs font-semibold mb-1.5">
+            <Sparkles size={13} /> Résumé suggéré
+          </div>
+          <div className="text-sm text-ink leading-relaxed">{ai.summary}</div>
+          {ai.suggested_action && (
+            <div className="text-sm text-sub mt-1.5">
+              <span className="font-medium">Action suggérée :</span> {ai.suggested_action}
+            </div>
+          )}
+          {ai.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {ai.tags.map((tag) => (
+                <span key={tag} className="text-xs bg-card border border-line rounded-full px-2 py-0.5 text-sub">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setNote(ai.summary + (ai.suggested_action ? `\n→ ${ai.suggested_action}` : ""))}
+            className="mt-2.5 text-accent-dk text-xs font-semibold"
+          >
+            Utiliser ce résumé comme note
+          </button>
+        </div>
+      )}
+
       <button onClick={onBack} className="w-full mt-2 bg-transparent border-none text-faint text-sm py-1.5">
         ← Autre résultat
       </button>

@@ -22,6 +22,7 @@ export default function ProspectDetailScreen({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   async function handleUpdate(data: ProspectFormData) {
@@ -31,16 +32,31 @@ export default function ProspectDetailScreen({
   }
 
   function handleConsentToggle() {
+    setError(null);
     startTransition(async () => {
-      await toggleConsent(prospect.id, prospect.consent_given);
-      router.refresh();
+      try {
+        await toggleConsent(prospect.id, prospect.consent_given);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Une erreur est survenue.");
+      }
     });
   }
 
   function handleDelete() {
     if (!confirm("Supprimer ce prospect ?")) return;
+    setError(null);
     startTransition(async () => {
-      await deleteProspect(prospect.id);
+      try {
+        await deleteProspect(prospect.id);
+      } catch (e) {
+        // `deleteProspect` redirige en cas de succès : Next.js signale ça via une
+        // exception spéciale qu'il ne faut surtout pas avaler, sinon la navigation casse.
+        if (e && typeof e === "object" && "digest" in e && String(e.digest).startsWith("NEXT_REDIRECT")) {
+          throw e;
+        }
+        setError(e instanceof Error ? e.message : "Suppression impossible.");
+      }
     });
   }
 
@@ -133,10 +149,11 @@ export default function ProspectDetailScreen({
       <button
         onClick={handleDelete}
         disabled={pending}
-        className="w-full flex items-center justify-center gap-2 text-red text-sm py-2.5 mb-2"
+        className="w-full flex items-center justify-center gap-2 text-red text-sm py-2.5 mb-2 disabled:opacity-60"
       >
         <Trash2 size={15} /> Supprimer
       </button>
+      {error && <p className="text-red text-sm text-center mb-2">{error}</p>}
 
       <div className="text-xs tracking-wide uppercase text-faint font-semibold mt-4 mb-2.5 px-0.5">Historique</div>
       <InteractionsTimeline interactions={interactions} />

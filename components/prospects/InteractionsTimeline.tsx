@@ -35,6 +35,21 @@ export default function InteractionsTimeline({ interactions }: { interactions: I
                 <span className="text-xs text-faint font-display">{fmtShort(h.created_at)}</span>
               </div>
               {h.note && <div className="text-sm text-sub mt-1 leading-relaxed">{h.note}</div>}
+              {h.ai_summary && (
+                <div className="text-sm text-sub mt-1.5 leading-relaxed bg-bg rounded-xl px-2.5 py-2">
+                  <span className="text-accent-dk font-medium">Résumé IA · </span>
+                  {h.ai_summary}
+                </div>
+              )}
+              {h.ai_tags && h.ai_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {h.ai_tags.map((tag) => (
+                    <span key={tag} className="text-xs bg-card border border-line rounded-full px-2 py-0.5 text-sub">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
