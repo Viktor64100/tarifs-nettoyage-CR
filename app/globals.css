@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Jetons de design NextCall (repris du prototype) */
+@theme {
+  --color-bg: #f3f5f4;
+  --color-card: #ffffff;
+  --color-ink: #0e1b17;
+  --color-sub: #5c6b66;
+  --color-faint: #93a09b;
+  --color-line: #e4e9e7;
+  --color-accent: #0a7a55;
+  --color-accent-dk: #075e42;
+  --color-accent-soft: #e4f1ea;
+  --color-amber: #b8770f;
+  --color-red: #b4432e;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
