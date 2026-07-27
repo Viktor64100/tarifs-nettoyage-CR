@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Upload, ChevronRight } from "lucide-react";
+import { Plus, Search, Upload, ChevronRight, ShieldAlert } from "lucide-react";
 import type { Prospect } from "@/types/db";
 import { StatusDot } from "./StatusChip";
 import AddProspectSheet from "./AddProspectSheet";
@@ -67,7 +67,12 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
               <div className="text-[16px] font-semibold">
                 {p.first_name} {p.last_name}
               </div>
-              <div className="text-sm text-sub mt-0.5 truncate">{p.company}</div>
+              <div className="text-sm text-sub mt-0.5 truncate flex items-center gap-1.5">
+                {p.company}
+                {!p.consent_given && (
+                  <ShieldAlert size={13} className="text-amber shrink-0" aria-label="Consentement à recueillir" />
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2.5 shrink-0">
               {p.next_follow_up_at && !["mauvais_numero", "pas_interesse", "rdv"].includes(p.status) && (

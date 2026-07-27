@@ -1,0 +1,44 @@
+import type { Interaction } from "@/types/db";
+import { STATUS } from "@/lib/prospect-status";
+
+const EXTRA_LABELS: Record<string, string> = {
+  note: "Note",
+  voice_note: "Note vocale",
+};
+
+function fmtShort(iso: string) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso));
+}
+
+export default function InteractionsTimeline({ interactions }: { interactions: Interaction[] }) {
+  if (!interactions.length) {
+    return <div className="text-faint text-sm py-2">Aucun appel encore.</div>;
+  }
+
+  return (
+    <div className="flex flex-col">
+      {interactions.map((h, i) => {
+        const meta = STATUS[h.type as keyof typeof STATUS];
+        const label = meta?.label ?? EXTRA_LABELS[h.type] ?? h.type;
+        const color = meta?.color ?? "var(--color-sub)";
+        return (
+          <div key={h.id} className="flex gap-3 pb-3.5">
+            <div className="flex flex-col items-center">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+              {i < interactions.length - 1 && <div className="w-px flex-1 bg-line mt-1" />}
+            </div>
+            <div className="flex-1 -mt-0.5">
+              <div className="flex justify-between">
+                <span className="text-[14.5px] font-semibold" style={{ color }}>
+                  {label}
+                </span>
+                <span className="text-xs text-faint font-display">{fmtShort(h.created_at)}</span>
+              </div>
+              {h.note && <div className="text-sm text-sub mt-1 leading-relaxed">{h.note}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

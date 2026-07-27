@@ -12,6 +12,9 @@ const ITEMS = [
 export default function TabBar() {
   const pathname = usePathname();
 
+  // Le flux d'appel occupe tout l'écran, comme dans le prototype : pas de barre d'onglets.
+  if (pathname.startsWith("/call")) return null;
+
   return (
     <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
       <div

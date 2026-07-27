@@ -2,9 +2,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Phone, ShieldCheck, ShieldAlert, Trash2, Pencil } from "lucide-react";
-import type { Prospect } from "@/types/db";
+import type { Interaction, Prospect } from "@/types/db";
 import { StatusChip } from "./StatusChip";
 import ProspectForm from "./ProspectForm";
+import InteractionsTimeline from "./InteractionsTimeline";
 import { updateProspect, deleteProspect, toggleConsent, type ProspectFormData } from "@/app/(app)/prospects/actions";
 
 function fmtShort(iso: string | null) {
@@ -12,7 +13,13 @@ function fmtShort(iso: string | null) {
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso));
 }
 
-export default function ProspectDetailScreen({ prospect }: { prospect: Prospect }) {
+export default function ProspectDetailScreen({
+  prospect,
+  interactions,
+}: {
+  prospect: Prospect;
+  interactions: Interaction[];
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -126,10 +133,13 @@ export default function ProspectDetailScreen({ prospect }: { prospect: Prospect 
       <button
         onClick={handleDelete}
         disabled={pending}
-        className="w-full flex items-center justify-center gap-2 text-red text-sm py-2.5"
+        className="w-full flex items-center justify-center gap-2 text-red text-sm py-2.5 mb-2"
       >
         <Trash2 size={15} /> Supprimer
       </button>
+
+      <div className="text-xs tracking-wide uppercase text-faint font-semibold mt-4 mb-2.5 px-0.5">Historique</div>
+      <InteractionsTimeline interactions={interactions} />
     </div>
   );
 }
