@@ -43,6 +43,9 @@ export default function LoginPage() {
         <p className="text-sub text-sm mt-2 text-center">
           Pas de compte ? <Link href="/signup" className="text-accent font-medium">Créer un compte</Link>
         </p>
+        <p className="text-faint text-xs mt-6 text-center">
+          <Link href="/privacy" className="text-faint underline">Politique de confidentialité</Link>
+        </p>
       </div>
     </main>
   );

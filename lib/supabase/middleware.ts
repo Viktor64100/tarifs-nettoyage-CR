@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = path === "/login" || path === "/signup";
   // /reset-password reste accessible avec une session "recovery" (issue du lien mail) :
   // elle est déjà couverte par `user` non nul, donc pas besoin de la lister ici.
-  const isPublic = isAuthPage || path === "/" || path === "/forgot-password";
+  const isPublic = isAuthPage || path === "/" || path === "/forgot-password" || path === "/privacy";
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));

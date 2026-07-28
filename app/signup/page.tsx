@@ -47,6 +47,10 @@ export default function SignupPage() {
         <p className="text-sub text-sm mt-6 text-center">
           Déjà inscrit ? <Link href="/login" className="text-accent font-medium">Se connecter</Link>
         </p>
+        <p className="text-faint text-xs mt-4 text-center leading-relaxed">
+          En créant un compte, tu acceptes notre{" "}
+          <Link href="/privacy" className="text-faint underline">politique de confidentialité</Link>.
+        </p>
       </div>
     </main>
   );

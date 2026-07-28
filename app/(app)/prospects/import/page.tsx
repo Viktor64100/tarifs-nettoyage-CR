@@ -63,7 +63,7 @@ export default function ImportProspectsPage() {
         onChange={(e) => setRaw(e.target.value)}
         rows={8}
         placeholder={"Colle ici, ex. :\nÉlodie;Marchand;Villa Azur;06 12 34 56 78;e@villazur.fr;Conciergerie"}
-        className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-sm font-mono resize-none mb-4"
+        className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base font-mono resize-none mb-4"
       />
 
       {raw.trim() && (

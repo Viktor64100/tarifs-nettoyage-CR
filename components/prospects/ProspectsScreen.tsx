@@ -52,7 +52,7 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Nom, entreprise, téléphone…"
-          className="border-none outline-none flex-1 text-[15px] bg-transparent"
+          className="border-none outline-none flex-1 text-base bg-transparent"
         />
       </div>
 

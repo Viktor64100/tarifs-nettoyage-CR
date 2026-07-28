@@ -293,7 +293,7 @@ function ScheduleStep({
             value={custom}
             min={t}
             onChange={(e) => setCustom(e.target.value)}
-            className="flex-1 border border-line rounded-2xl px-3.5 py-3 text-[15px] bg-card"
+            className="flex-1 border border-line rounded-2xl px-3.5 py-3 text-base bg-card"
           />
           <button
             disabled={!custom || pending}
@@ -331,7 +331,7 @@ function ScheduleStep({
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         placeholder="Note rapide, ou dictée à voix haute…"
-        className="w-full mt-2.5 border border-line rounded-2xl px-3.5 py-3 text-sm resize-none bg-card"
+        className="w-full mt-2.5 border border-line rounded-2xl px-3.5 py-3 text-base resize-none bg-card"
       />
       {aiError && <p className="text-red text-xs mt-1.5">{aiError}</p>}
 

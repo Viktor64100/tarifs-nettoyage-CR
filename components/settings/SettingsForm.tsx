@@ -64,7 +64,7 @@ export default function SettingsForm({
         <label className="block mb-3.5">
           <div className="text-sm text-sub mb-1.5 font-medium">Entreprise</div>
           <input
-            className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-[15.5px]"
+            className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
           />
@@ -74,7 +74,7 @@ export default function SettingsForm({
           <input
             type="number"
             min={1}
-            className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-[15.5px]"
+            className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base"
             value={goal}
             onChange={(e) => setGoal(Number(e.target.value))}
           />

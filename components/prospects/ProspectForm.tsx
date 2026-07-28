@@ -2,7 +2,8 @@
 import { useState, useTransition } from "react";
 import type { ProspectFormData } from "@/app/(app)/prospects/actions";
 
-const inputClass = "w-full border border-line rounded-xl px-3.5 py-3 bg-card text-[15.5px] mb-2.5";
+// text-base (16px) : en dessous, Safari iOS zoome automatiquement le champ au focus.
+const inputClass = "w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base mb-2.5";
 
 export default function ProspectForm({
   initial,
