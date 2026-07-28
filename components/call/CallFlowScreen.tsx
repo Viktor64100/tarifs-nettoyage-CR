@@ -79,7 +79,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   }
 
   function pick(outcome: Outcome) {
-    if (outcome.kind === "schedule") {
+    if (outcome.kind === "schedule" || outcome.kind === "requeue") {
       setPending(outcome);
       setStep("schedule");
     } else {
@@ -192,7 +192,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
               ai={ai}
               setAi={setAi}
               pending={isPending}
-              onConfirm={(iso) => commit(pending, iso)}
+              onConfirm={(iso) => commit(pending, iso ?? undefined)}
               onBack={() => setStep("outcome")}
             />
           )
@@ -218,9 +218,10 @@ function ScheduleStep({
   ai: AiSuggestion | null;
   setAi: (v: AiSuggestion | null) => void;
   pending: boolean;
-  onConfirm: (iso: string) => void;
+  onConfirm: (iso: string | null) => void;
   onBack: () => void;
 }) {
+  const needsDate = outcome.kind === "schedule";
   const t = todayISO();
   const base = [
     { label: "Demain", iso: addDaysISO(t, 1) },
@@ -272,53 +273,55 @@ function ScheduleStep({
   return (
     <div>
       <div className="text-center text-faint text-[13px] tracking-wide uppercase font-semibold mb-3.5">
-        Programmer la relance
+        {needsDate ? "Programmer la relance" : "Ajouter une note (optionnel)"}
       </div>
-      <div className="flex flex-col gap-2">
-        {base.map((b) => (
-          <button
-            key={b.iso}
-            onClick={() => onConfirm(b.iso)}
-            disabled={pending}
-            className="flex justify-between items-center bg-card border border-line rounded-2xl px-4 py-[15px] disabled:opacity-50"
-          >
-            <span className="text-[15.5px] font-medium">{b.label}</span>
-            <span className="text-faint text-sm font-display flex items-center gap-1">
-              {fmtShortISO(b.iso)} <ChevronRight size={15} />
-            </span>
-          </button>
-        ))}
-        {ai?.suggested_follow_up_date && (
-          <button
-            onClick={() => onConfirm(ai.suggested_follow_up_date!)}
-            disabled={pending}
-            className="flex justify-between items-center bg-accent-soft border border-accent-border rounded-2xl px-4 py-[15px] disabled:opacity-50"
-          >
-            <span className="text-[15.5px] font-medium text-accent-dk flex items-center gap-1.5">
-              <Sparkles size={14} /> Suggestion IA
-            </span>
-            <span className="text-accent-dk text-sm font-display flex items-center gap-1">
-              {fmtShortISO(ai.suggested_follow_up_date)} <ChevronRight size={15} />
-            </span>
-          </button>
-        )}
-        <div className="flex gap-2 items-center">
-          <input
-            type="date"
-            value={custom}
-            min={t}
-            onChange={(e) => setCustom(e.target.value)}
-            className="flex-1 border border-line rounded-2xl px-3.5 py-3 text-base bg-card"
-          />
-          <button
-            disabled={!custom || pending}
-            onClick={() => onConfirm(custom)}
-            className="bg-accent text-white rounded-2xl px-[18px] py-3 font-semibold disabled:bg-line disabled:text-faint"
-          >
-            OK
-          </button>
+      {needsDate && (
+        <div className="flex flex-col gap-2">
+          {base.map((b) => (
+            <button
+              key={b.iso}
+              onClick={() => onConfirm(b.iso)}
+              disabled={pending}
+              className="flex justify-between items-center bg-card border border-line rounded-2xl px-4 py-[15px] disabled:opacity-50"
+            >
+              <span className="text-[15.5px] font-medium">{b.label}</span>
+              <span className="text-faint text-sm font-display flex items-center gap-1">
+                {fmtShortISO(b.iso)} <ChevronRight size={15} />
+              </span>
+            </button>
+          ))}
+          {ai?.suggested_follow_up_date && (
+            <button
+              onClick={() => onConfirm(ai.suggested_follow_up_date!)}
+              disabled={pending}
+              className="flex justify-between items-center bg-accent-soft border border-accent-border rounded-2xl px-4 py-[15px] disabled:opacity-50"
+            >
+              <span className="text-[15.5px] font-medium text-accent-dk flex items-center gap-1.5">
+                <Sparkles size={14} /> Suggestion IA
+              </span>
+              <span className="text-accent-dk text-sm font-display flex items-center gap-1">
+                {fmtShortISO(ai.suggested_follow_up_date)} <ChevronRight size={15} />
+              </span>
+            </button>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              value={custom}
+              min={t}
+              onChange={(e) => setCustom(e.target.value)}
+              className="flex-1 border border-line rounded-2xl px-3.5 py-3 text-base bg-card"
+            />
+            <button
+              disabled={!custom || pending}
+              onClick={() => onConfirm(custom)}
+              className="bg-accent text-white rounded-2xl px-[18px] py-3 font-semibold disabled:bg-line disabled:text-faint"
+            >
+              OK
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex gap-2 mt-3.5">
         {speech.supported && (
@@ -377,6 +380,16 @@ function ScheduleStep({
             Utiliser ce résumé comme note
           </button>
         </div>
+      )}
+
+      {!needsDate && (
+        <button
+          onClick={() => onConfirm(null)}
+          disabled={pending}
+          className="w-full mt-3.5 bg-accent text-white rounded-2xl py-3.5 font-semibold disabled:opacity-60"
+        >
+          {pending ? "…" : "Continuer"}
+        </button>
       )}
 
       <button onClick={onBack} className="w-full mt-2 bg-transparent border-none text-faint text-sm py-1.5">
