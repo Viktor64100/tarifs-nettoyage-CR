@@ -4,8 +4,8 @@
 > Il ne s'agit pas d'un conseil juridique : à compléter avec les informations réelles de l'entreprise
 > et à faire valider par un juriste ou un DPO avant le lancement commercial.
 >
-> Dernière mise à jour : [à compléter]
-> Responsable du registre : [nom / fonction]
+> Dernière mise à jour : 28 juillet 2026
+> Responsable du registre : Dylan Verdier
 
 ---
 
@@ -13,13 +13,14 @@
 
 | Champ | Valeur |
 |---|---|
-| Raison sociale | [à compléter] |
-| Forme juridique | [à compléter] |
-| SIREN/SIRET | [à compléter] |
-| Adresse du siège | [à compléter] |
-| Représentant légal | [à compléter] |
-| Délégué à la protection des données (DPO) | [à compléter — non obligatoire pour une petite structure sauf traitement à grande échelle] |
-| Contact données personnelles | [email à compléter] |
+| Raison sociale | Dylan Verdier |
+| Forme juridique | Entrepreneur individuel (micro-entreprise) |
+| SIREN | 934 893 272 |
+| SIRET (siège) | 934 893 272 00013 |
+| Adresse du siège | 7 rue du Professeur Calmette, 06240 Beausoleil, France |
+| Représentant légal | Dylan Verdier |
+| Délégué à la protection des données (DPO) | Non désigné — non obligatoire pour une micro-entreprise sans traitement à grande échelle |
+| Contact données personnelles | dylanverdier0@gmail.com |
 
 ---
 

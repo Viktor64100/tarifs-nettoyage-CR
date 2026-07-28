@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <h1 className="font-display text-2xl font-semibold tracking-tight mt-4 mb-1">
         Politique de confidentialité
       </h1>
-      <p className="text-faint text-sm mb-6">Dernière mise à jour : [à compléter]</p>
+      <p className="text-faint text-sm mb-6">Dernière mise à jour : 28 juillet 2026</p>
 
       <div className="bg-amber/10 border border-amber/30 rounded-2xl px-4 py-3.5 mb-8 text-sm text-sub">
         <strong className="text-amber">Modèle à valider avant mise en ligne.</strong> Ce document est un point de
@@ -26,12 +26,12 @@ export default function PrivacyPage() {
 
       <Section title="1. Qui sommes-nous ?">
         <p>
-          NextCall est édité par <strong>[Nom de l&apos;entreprise / de l&apos;éditeur]</strong>, [forme juridique],
-          immatriculé [SIREN/SIRET], dont le siège est situé [adresse]. Responsable du traitement des données au sens
-          du RGPD : [nom du responsable, ou l&apos;entreprise elle-même].
+          NextCall est édité par <strong>Dylan Verdier</strong>, entrepreneur individuel (micro-entreprise), SIRET
+          934 893 272 00013, dont le siège est situé 7 rue du Professeur Calmette, 06240 Beausoleil, France.
+          Responsable du traitement des données au sens du RGPD : Dylan Verdier.
         </p>
         <p className="mt-2">
-          Contact pour toute question relative à vos données : <strong>[email de contact]</strong>.
+          Contact pour toute question relative à vos données : <strong>dylanverdier0@gmail.com</strong>.
         </p>
       </Section>
 
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
         <p>
           Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement, de
           limitation, de portabilité et d&apos;opposition sur vos données. Pour l&apos;exercer, contactez{" "}
-          <strong>[email de contact]</strong>. Vous pouvez également introduire une réclamation auprès de la CNIL
+          <strong>dylanverdier0@gmail.com</strong>. Vous pouvez également introduire une réclamation auprès de la CNIL
           (cnil.fr).
         </p>
         <p className="mt-2">
@@ -130,7 +130,7 @@ export default function PrivacyPage() {
 
       <Section title="10. Contact">
         <p>
-          Pour toute question relative à cette politique ou à vos données : <strong>[email de contact]</strong>.
+          Pour toute question relative à cette politique ou à vos données : <strong>dylanverdier0@gmail.com</strong>.
         </p>
       </Section>
     </main>
