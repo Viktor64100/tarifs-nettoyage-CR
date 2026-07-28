@@ -18,8 +18,14 @@ export async function updateProfile(data: { company: string; daily_goal: number 
   revalidatePath("/dashboard");
 }
 
+// Neutralise l'injection de formule CSV : si un champ (nom, entreprise…)
+// commence par =, +, -, @ ou une tabulation, Excel/Sheets peut l'interpréter
+// comme une formule à l'ouverture. On préfixe d'une apostrophe pour forcer
+// une lecture en texte brut (mitigation standard OWASP).
 function csvCell(v: string | number | boolean | null): string {
-  return `"${String(v ?? "").replace(/"/g, '""')}"`;
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
 }
 
 export async function exportProspectsCSV(): Promise<string> {

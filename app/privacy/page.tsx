@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="max-w-[640px] mx-auto px-5 py-10 leading-relaxed">
+    <main id="main" className="max-w-[640px] mx-auto px-5 py-10 leading-relaxed">
       <Link href="/" className="text-accent text-sm font-medium">
         ← Retour
       </Link>

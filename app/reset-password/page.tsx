@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
+    <main id="main" className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <LogoMark size={30} className="mb-3" />
         <h1 className="font-display text-3xl font-semibold tracking-tight">Nouveau mot de passe</h1>

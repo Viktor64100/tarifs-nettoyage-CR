@@ -6,7 +6,7 @@
   --color-card: #ffffff;
   --color-ink: #0e1b17;
   --color-sub: #5c6b66;
-  --color-faint: #93a09b;
+  --color-faint: #7c8b85;
   --color-line: #e4e9e7;
   --color-accent: #0a7a55;
   --color-accent-dk: #075e42;
@@ -20,8 +20,8 @@
   --color-neutral-soft: #eef1f0;
   --color-track: #edf1ef;
 
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
 }
 
 html, body {
@@ -40,7 +40,7 @@ html, body {
     --color-card: #16241f;
     --color-ink: #eef2f0;
     --color-sub: #9fb0a9;
-    --color-faint: #6b7d75;
+    --color-faint: #7d8f87;
     --color-line: #26362f;
     --color-accent: #1da579;
     --color-accent-dk: #37c795;
@@ -53,6 +53,19 @@ html, body {
     --color-red-soft: #3a211d;
     --color-neutral-soft: #1c2a24;
     --color-track: #22302a;
+  }
+}
+
+/* Habillage desktop : l'app reste une colonne mobile-first, mais au-delà de
+   640px elle flotte sur un fond dégradé subtil plutôt que sur une couleur
+   plate — évite l'effet "page cassée" avec de grandes marges vides. */
+@media (min-width: 640px) {
+  body {
+    background:
+      radial-gradient(1100px circle at 12% -10%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 60%),
+      radial-gradient(900px circle at 100% 100%, color-mix(in srgb, var(--color-accent) 5%, transparent), transparent 55%),
+      var(--color-bg);
+    background-attachment: fixed;
   }
 }
 

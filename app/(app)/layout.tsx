@@ -11,10 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div
-      className="max-w-[460px] mx-auto min-h-screen pb-24"
+      className="max-w-[460px] mx-auto min-h-screen pb-24 bg-bg sm:border-x sm:border-line sm:shadow-[0_0_60px_rgba(0,0,0,0.06)]"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      {children}
+      <main id="main">{children}</main>
       <TabBar />
     </div>
   );

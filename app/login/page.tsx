@@ -25,7 +25,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
+    <main id="main" className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Logo size={34} wordmarkClassName="text-3xl" />
         <p className="text-sub mt-2 mb-8">Connexion à votre espace.</p>
