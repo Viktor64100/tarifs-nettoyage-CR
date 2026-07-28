@@ -30,7 +30,8 @@ npm install
 #    (SQL Editor -> coller supabase/migrations/0001_init.sql -> Run)
 #    ou via la CLI : supabase link && supabase db push
 
-# 3. Stripe : créer un produit "NextCall" à 15 €/mois (récurrent), récupérer le price_id.
+# 3. Stripe : créer un produit "NextCall" avec deux prix récurrents (29 €/mois et
+#    288 €/an), récupérer les deux price_id.
 #    En local, écouter les webhooks :
 npm run stripe:listen        # copie le whsec_... dans .env.local
 

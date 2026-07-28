@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ShieldAlert, ShieldCheck, CreditCard } from "lucide-react";
+import { ShieldAlert, ShieldCheck, CreditCard, Check, Sparkles } from "lucide-react";
 import type { PlanStatus } from "@/types/db";
 
 const PLAN_LABEL: Record<PlanStatus, string> = {
@@ -9,6 +9,15 @@ const PLAN_LABEL: Record<PlanStatus, string> = {
   past_due: "Paiement en retard",
   canceled: "Annulé",
 };
+
+const INCLUDED = [
+  "Prospects et relances illimités",
+  "Résumé et suggestions par IA après chaque appel",
+  "Suivi du consentement RGPD intégré",
+  "Statistiques et export CSV",
+];
+
+type Interval = "annual" | "monthly";
 
 export default function BillingScreen({
   plan,
@@ -19,7 +28,7 @@ export default function BillingScreen({
   trialEndsAt: string | null;
   hasStripeCustomer: boolean;
 }) {
-  const [loadingAction, setLoadingAction] = useState<"checkout" | "portal" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<Interval | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const daysLeft = trialEndsAt
@@ -27,11 +36,29 @@ export default function BillingScreen({
     : null;
   const trialExpired = plan !== "active" && daysLeft !== null && daysLeft < 0;
 
-  async function goTo(action: "checkout" | "portal") {
+  async function subscribe(interval: Interval) {
     setError(null);
-    setLoadingAction(action);
+    setLoadingAction(interval);
     try {
-      const res = await fetch(`/api/stripe/${action}`, { method: "POST" });
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Action impossible pour le moment.");
+      window.location.href = data.url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Action impossible pour le moment.");
+      setLoadingAction(null);
+    }
+  }
+
+  async function openPortal() {
+    setError(null);
+    setLoadingAction("portal");
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Action impossible pour le moment.");
       window.location.href = data.url;
@@ -56,7 +83,7 @@ export default function BillingScreen({
         </div>
         <p className="text-sub text-sm mt-1.5 leading-relaxed">
           {plan === "active" &&
-            "Ton abonnement NextCall (15 €/mois) est actif. Gère-le, change de moyen de paiement ou résilie depuis le portail Stripe."}
+            "Ton abonnement NextCall est actif. Gère-le, change de moyen de paiement ou résilie depuis le portail Stripe."}
           {plan !== "active" &&
             daysLeft !== null &&
             daysLeft >= 0 &&
@@ -71,18 +98,54 @@ export default function BillingScreen({
       {error && <p className="text-red text-sm mb-3">{error}</p>}
 
       {plan !== "active" && (
-        <button
-          onClick={() => goTo("checkout")}
-          disabled={loadingAction !== null}
-          className="w-full flex items-center justify-center gap-2 bg-accent text-white rounded-2xl py-3.5 font-semibold text-[15.5px] disabled:opacity-60 mb-2.5"
-        >
-          <CreditCard size={17} /> {loadingAction === "checkout" ? "…" : "S'abonner — 15 €/mois"}
-        </button>
+        <div className="flex flex-col gap-2.5 mb-4">
+          <ul className="flex flex-col gap-1.5 mb-1 px-0.5">
+            {INCLUDED.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sub text-[13.5px]">
+                <Check size={15} className="text-accent shrink-0 mt-0.5" />
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <div className="relative bg-accent-soft border-2 border-accent rounded-2xl p-4 pt-5">
+            <span className="absolute -top-2.5 left-4 bg-accent text-white text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full flex items-center gap-1">
+              <Sparkles size={11} /> 2 mois offerts
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-[28px] font-semibold tracking-tight">24&nbsp;€</span>
+              <span className="text-sub text-sm">/mois</span>
+              <span className="text-faint text-xs line-through ml-auto">29&nbsp;€/mois</span>
+            </div>
+            <div className="text-sub text-xs mt-0.5 mb-3.5">Facturé 288&nbsp;€/an</div>
+            <button
+              onClick={() => subscribe("annual")}
+              disabled={loadingAction !== null}
+              className="w-full flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-3 font-semibold text-[15px] disabled:opacity-60"
+            >
+              <CreditCard size={16} /> {loadingAction === "annual" ? "…" : "S'abonner — facturation annuelle"}
+            </button>
+          </div>
+
+          <button
+            onClick={() => subscribe("monthly")}
+            disabled={loadingAction !== null}
+            className="w-full flex items-center justify-between bg-card border border-line rounded-2xl px-4 py-3.5 text-left disabled:opacity-60"
+          >
+            <span>
+              <span className="text-[15px] font-medium">Mensuel, sans engagement</span>
+              <span className="block text-faint text-xs mt-0.5">Résilie à tout moment</span>
+            </span>
+            <span className="font-display text-[15.5px] shrink-0">
+              {loadingAction === "monthly" ? "…" : "29 €/mois"}
+            </span>
+          </button>
+        </div>
       )}
 
       {hasStripeCustomer && (
         <button
-          onClick={() => goTo("portal")}
+          onClick={openPortal}
           disabled={loadingAction !== null}
           className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3.5 text-[15px] font-medium text-ink disabled:opacity-60"
         >
