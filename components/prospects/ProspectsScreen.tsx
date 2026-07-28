@@ -6,11 +6,15 @@ import type { Prospect, ProspectStatus } from "@/types/db";
 import { StatusDot } from "./StatusChip";
 import Avatar from "./Avatar";
 import AddProspectSheet from "./AddProspectSheet";
-import { createProspect, type ProspectFormData } from "@/app/(app)/prospects/actions";
+import SwipeableRow from "./SwipeableRow";
+import { createProspect, deleteProspect, type ProspectFormData } from "@/app/(app)/prospects/actions";
 import { fmtDateShort, todayISO } from "@/lib/format";
 import { STATUS } from "@/lib/prospect-status";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useRouter } from "next/navigation";
+
+type ListAction = { type: "add"; prospect: Prospect } | { type: "remove"; id: string };
 
 type SortKey = "recent" | "name" | "relance";
 const FILTERS: { key: ProspectStatus | "tous"; label: string }[] = [
@@ -21,37 +25,45 @@ const FILTERS: { key: ProspectStatus | "tous"; label: string }[] = [
 export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }) {
   const router = useRouter();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<ProspectStatus | "tous">("tous");
   const [sort, setSort] = useState<SortKey>("recent");
   const [adding, setAdding] = useState(false);
+  const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const today = todayISO();
 
-  const [optimisticProspects, addOptimistic] = useOptimistic(
+  const [optimisticProspects, dispatchOptimistic] = useOptimistic(
     prospects,
-    (state, next: Prospect) => [next, ...state]
+    (state, action: ListAction) =>
+      action.type === "add"
+        ? [action.prospect, ...state]
+        : state.filter((p) => p.id !== action.id)
   );
 
   async function handleCreate(data: ProspectFormData) {
     const now = new Date().toISOString();
     startTransition(() => {
-      addOptimistic({
-        id: `optimistic-${now}`,
-        user_id: "",
-        first_name: data.first_name,
-        last_name: data.last_name || null,
-        company: data.company || null,
-        phone: data.phone,
-        email: data.email || null,
-        sector: data.sector || null,
-        status: "nouveau",
-        next_follow_up_at: null,
-        consent_given: data.consent_given,
-        consent_at: data.consent_given ? now : null,
-        consent_source: data.consent_given ? data.consent_source || "Saisie manuelle" : null,
-        created_at: now,
-        updated_at: now,
+      dispatchOptimistic({
+        type: "add",
+        prospect: {
+          id: `optimistic-${now}`,
+          user_id: "",
+          first_name: data.first_name,
+          last_name: data.last_name || null,
+          company: data.company || null,
+          phone: data.phone,
+          email: data.email || null,
+          sector: data.sector || null,
+          status: "nouveau",
+          next_follow_up_at: null,
+          consent_given: data.consent_given,
+          consent_at: data.consent_given ? now : null,
+          consent_source: data.consent_given ? data.consent_source || "Saisie manuelle" : null,
+          created_at: now,
+          updated_at: now,
+        },
       });
     });
     try {
@@ -60,6 +72,27 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
       router.refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Ajout impossible.", "error");
+    }
+  }
+
+  async function handleDelete(p: Prospect) {
+    const ok = await confirm({
+      title: "Supprimer ce prospect ?",
+      message: `${p.first_name} ${p.last_name ?? ""} et tout son historique seront définitivement supprimés.`,
+      confirmLabel: "Supprimer",
+      danger: true,
+    });
+    if (!ok) return;
+    startTransition(() => {
+      dispatchOptimistic({ type: "remove", id: p.id });
+    });
+    try {
+      await deleteProspect(p.id);
+      toast("Prospect supprimé.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Suppression impossible.", "error");
+    } finally {
+      router.refresh();
     }
   }
 
@@ -149,27 +182,34 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
           const tel = "tel:" + p.phone.replace(/\s/g, "");
           return (
             <div key={p.id} className="flex items-stretch gap-2">
-              <Link
-                href={`/prospects/${p.id}`}
-                className="flex-1 flex items-center gap-3 bg-card border border-line rounded-2xl px-3.5 py-3 min-w-0"
+              <SwipeableRow
+                isOpen={openRowId === p.id}
+                onOpenChange={(open) => setOpenRowId(open ? p.id : null)}
+                onDelete={() => handleDelete(p)}
+                deleteLabel={`Supprimer ${p.first_name}`}
               >
-                <Avatar firstName={p.first_name} lastName={p.last_name} size={38} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[16px] font-semibold truncate">
-                    {p.first_name} {p.last_name}
+                <Link
+                  href={`/prospects/${p.id}`}
+                  className="flex items-center gap-3 bg-card border border-line rounded-2xl px-3.5 py-3 min-w-0"
+                >
+                  <Avatar firstName={p.first_name} lastName={p.last_name} size={38} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[16px] font-semibold truncate">
+                      {p.first_name} {p.last_name}
+                    </div>
+                    <div className="text-sm text-sub mt-0.5 truncate">{p.company}</div>
                   </div>
-                  <div className="text-sm text-sub mt-0.5 truncate">{p.company}</div>
-                </div>
-                <div className="flex items-center gap-2.5 shrink-0">
-                  {p.next_follow_up_at && !["mauvais_numero", "pas_interesse", "rdv"].includes(p.status) && (
-                    <span className={`text-xs font-display ${p.next_follow_up_at <= today ? "text-amber" : "text-faint"}`}>
-                      {fmtDateShort(p.next_follow_up_at)}
-                    </span>
-                  )}
-                  <StatusDot status={p.status} />
-                  <ChevronRight size={17} className="text-faint" />
-                </div>
-              </Link>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    {p.next_follow_up_at && !["mauvais_numero", "pas_interesse", "rdv"].includes(p.status) && (
+                      <span className={`text-xs font-display ${p.next_follow_up_at <= today ? "text-amber" : "text-faint"}`}>
+                        {fmtDateShort(p.next_follow_up_at)}
+                      </span>
+                    )}
+                    <StatusDot status={p.status} />
+                    <ChevronRight size={17} className="text-faint" />
+                  </div>
+                </Link>
+              </SwipeableRow>
               <a
                 href={tel}
                 aria-label={`Appeler ${p.first_name}`}

@@ -88,10 +88,9 @@ export default function ProspectDetailScreen({
     startTransition(async () => {
       try {
         await deleteProspect(prospect.id);
+        toast("Prospect supprimé.");
+        router.push("/prospects");
       } catch (e) {
-        if (e && typeof e === "object" && "digest" in e && String(e.digest).startsWith("NEXT_REDIRECT")) {
-          throw e;
-        }
         toast(e instanceof Error ? e.message : "Suppression impossible.", "error");
       }
     });

@@ -2,9 +2,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Download, ShieldQuestion, Trash2 } from "lucide-react";
+import { LogOut, Download, ShieldQuestion, Trash2, ListX } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile, exportProspectsCSV, deleteAccount } from "@/app/(app)/settings/actions";
+import { deleteAllProspects } from "@/app/(app)/prospects/actions";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import Field from "@/components/ui/Field";
@@ -12,9 +13,11 @@ import Field from "@/components/ui/Field";
 export default function SettingsForm({
   initialCompany,
   initialGoal,
+  prospectCount,
 }: {
   initialCompany: string;
   initialGoal: number;
+  prospectCount: number;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -24,6 +27,7 @@ export default function SettingsForm({
   const [goal, setGoal] = useState(initialGoal);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingAllProspects, setDeletingAllProspects] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function save() {
@@ -59,6 +63,31 @@ export default function SettingsForm({
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  async function handleDeleteAllProspects() {
+    if (!prospectCount) {
+      toast("Aucun prospect à supprimer.", "info");
+      return;
+    }
+    const ok = await confirm({
+      title: "Supprimer tous les prospects ?",
+      message: `${prospectCount} prospect${prospectCount > 1 ? "s" : ""} et tout leur historique d'appels seront définitivement supprimés. Ton compte et ton abonnement ne sont pas concernés.`,
+      confirmLabel: "Tout supprimer",
+      danger: true,
+    });
+    if (!ok) return;
+    setDeletingAllProspects(true);
+    try {
+      await deleteAllProspects();
+      toast("Tous les prospects ont été supprimés.");
+      router.push("/prospects");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Suppression impossible.", "error");
+    } finally {
+      setDeletingAllProspects(false);
+    }
   }
 
   async function handleDeleteAccount() {
@@ -136,6 +165,16 @@ export default function SettingsForm({
         <div className="text-xs tracking-wide uppercase text-faint font-semibold mb-2.5 px-0.5">
           Zone dangereuse
         </div>
+        <button
+          onClick={handleDeleteAllProspects}
+          disabled={deletingAllProspects}
+          className="w-full flex items-center justify-center gap-2 bg-red-soft border border-line rounded-2xl py-3.5 text-[15px] font-medium text-red disabled:opacity-60 mb-2.5"
+        >
+          <ListX size={17} />
+          {deletingAllProspects
+            ? "Suppression…"
+            : `Supprimer tous les prospects${prospectCount ? ` (${prospectCount})` : ""}`}
+        </button>
         <button
           onClick={handleDeleteAccount}
           disabled={deleting}

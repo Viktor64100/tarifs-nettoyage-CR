@@ -1,5 +1,4 @@
 "use server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -69,7 +68,19 @@ export async function deleteProspect(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/prospects");
-  redirect("/prospects");
+  revalidatePath("/dashboard");
+}
+
+// Suppression globale (Réglages → zone dangereuse). Irréversible : les interactions
+// liées sont purgées en cascade (FK on delete cascade), les prospects ne le sont pas.
+export async function deleteAllProspects() {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("prospects").delete().eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/prospects");
+  revalidatePath("/dashboard");
+  revalidatePath("/stats");
 }
 
 export async function toggleConsent(id: string, currentlyGiven: boolean, source?: string) {

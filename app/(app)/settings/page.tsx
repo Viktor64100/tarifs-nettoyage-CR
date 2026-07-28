@@ -8,10 +8,10 @@ export const metadata: Metadata = { title: "Réglages" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company, daily_goal")
-    .single();
+  const [{ data: profile }, { count: prospectCount }] = await Promise.all([
+    supabase.from("profiles").select("company, daily_goal").single(),
+    supabase.from("prospects").select("*", { count: "exact", head: true }),
+  ]);
 
   return (
     <div className="px-5 pt-7">
@@ -42,6 +42,7 @@ export default async function SettingsPage() {
       <SettingsForm
         initialCompany={profile?.company ?? ""}
         initialGoal={profile?.daily_goal ?? 30}
+        prospectCount={prospectCount ?? 0}
       />
     </div>
   );
