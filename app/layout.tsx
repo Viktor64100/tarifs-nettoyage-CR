@@ -17,7 +17,7 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-const description = "L'assistant qui organise votre prospection téléphonique.";
+const description = "L'assistant qui organise ta prospection téléphonique.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nextcall.tech"),

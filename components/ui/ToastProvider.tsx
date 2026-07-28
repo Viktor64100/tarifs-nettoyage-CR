@@ -34,6 +34,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
         className="fixed top-0 left-0 right-0 z-[100] flex flex-col items-center gap-2 px-4 pointer-events-none"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
       >

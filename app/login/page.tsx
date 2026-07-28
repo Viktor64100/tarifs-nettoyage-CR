@@ -28,7 +28,7 @@ export default function LoginPage() {
     <main id="main" className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Logo size={34} wordmarkClassName="text-3xl" />
-        <p className="text-sub mt-2 mb-8">Connexion à votre espace.</p>
+        <p className="text-sub mt-2 mb-8">Connexion à ton espace.</p>
         <form onSubmit={signIn} className="flex flex-col gap-1">
           <Field label="Email">
             <input

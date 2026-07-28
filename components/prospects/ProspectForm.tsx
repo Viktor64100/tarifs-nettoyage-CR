@@ -10,11 +10,13 @@ export default function ProspectForm({
   initial,
   showConsent = true,
   submitLabel = "Enregistrer",
+  autoFocus = false,
   onSubmit,
 }: {
   initial?: Partial<ProspectFormData>;
   showConsent?: boolean;
   submitLabel?: string;
+  autoFocus?: boolean;
   onSubmit: (data: ProspectFormData) => Promise<void>;
 }) {
   const [f, setF] = useState<ProspectFormData>({
@@ -50,25 +52,42 @@ export default function ProspectForm({
     <div>
       <div className="flex gap-2.5">
         <Field label="Prénom *" className="flex-1">
-          <input value={f.first_name} onChange={set("first_name")} className={inputClass} />
+          <input
+            value={f.first_name}
+            onChange={set("first_name")}
+            className={inputClass}
+            autoFocus={autoFocus}
+            autoComplete="given-name"
+            aria-required="true"
+          />
         </Field>
         <Field label="Nom" className="flex-1">
-          <input value={f.last_name} onChange={set("last_name")} className={inputClass} />
+          <input value={f.last_name} onChange={set("last_name")} className={inputClass} autoComplete="family-name" />
         </Field>
       </div>
       <Field label="Entreprise">
-        <input value={f.company} onChange={set("company")} className={inputClass} />
+        <input value={f.company} onChange={set("company")} className={inputClass} autoComplete="organization" />
       </Field>
       <Field label="Téléphone *">
         <input
           value={f.phone}
           onChange={(e) => setF({ ...f, phone: formatPhoneFR(e.target.value) })}
+          type="tel"
           inputMode="tel"
+          autoComplete="tel"
+          aria-required="true"
           className={inputClass}
         />
       </Field>
       <Field label="Email (optionnel)">
-        <input value={f.email} onChange={set("email")} inputMode="email" className={inputClass} />
+        <input
+          value={f.email}
+          onChange={set("email")}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          className={inputClass}
+        />
       </Field>
       <Field label="Secteur (optionnel)">
         <input value={f.sector} onChange={set("sector")} className={inputClass} />
