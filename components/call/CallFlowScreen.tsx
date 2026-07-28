@@ -256,7 +256,10 @@ function ScheduleStep({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: note }),
       });
-      if (!res.ok) throw new Error("Résumé IA indisponible pour le moment.");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Résumé IA indisponible pour le moment.");
+      }
       const data = (await res.json()) as AiSuggestion;
       setAi(data);
     } catch (e) {

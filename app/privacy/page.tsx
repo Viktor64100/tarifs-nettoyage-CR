@@ -94,18 +94,20 @@ export default function PrivacyPage() {
 
       <Section title="6. Combien de temps conservons-nous vos données ?">
         <p>
-          Les données de compte et de prospects sont conservées tant que votre compte est actif. En cas de
-          suppression de compte, les données sont supprimées ou anonymisées sous [délai à définir, ex. 30 jours],
-          sauf obligation légale de conservation plus longue (ex. facturation).
+          Les données de compte et de prospects sont conservées tant que votre compte est actif. La suppression de
+          compte depuis l&apos;application (Réglages → Supprimer mon compte) efface immédiatement et
+          définitivement votre compte, vos prospects et votre historique d&apos;appels, sauf obligation légale de
+          conservation plus longue (ex. facturation).
         </p>
       </Section>
 
       <Section title="7. Vos droits">
         <p>
           Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement, de
-          limitation, de portabilité et d&apos;opposition sur vos données. Pour l&apos;exercer, contactez{" "}
-          <strong>dylanverdier0@gmail.com</strong>. Vous pouvez également introduire une réclamation auprès de la CNIL
-          (cnil.fr).
+          limitation, de portabilité et d&apos;opposition sur vos données. Le droit à l&apos;effacement de votre
+          compte peut être exercé directement depuis l&apos;application (Réglages → Supprimer mon compte). Pour les
+          autres droits, contactez <strong>dylanverdier0@gmail.com</strong>. Vous pouvez également introduire une
+          réclamation auprès de la CNIL (cnil.fr).
         </p>
         <p className="mt-2">
           Si vous êtes un prospect dont les données sont présentes dans NextCall via l&apos;un de nos clients,

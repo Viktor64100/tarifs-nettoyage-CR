@@ -1,6 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/admin";
+import { stripe } from "@/lib/stripe";
 import type { Prospect } from "@/types/db";
 
 export async function updateProfile(data: { company: string; daily_goal: number }) {
@@ -51,4 +53,31 @@ export async function exportProspectsCSV(): Promise<string> {
   );
 
   return [head.join(","), ...lines].join("\n");
+}
+
+// Droit à l'effacement (RGPD) en libre-service. Résilie l'abonnement Stripe actif
+// (best-effort — on ne bloque pas la suppression si Stripe échoue), puis supprime
+// le compte auth.users : la suppression en cascade (FK on delete cascade) purge
+// profiles, prospects, interactions et ai_usage_daily.
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Non authentifié.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("stripe_subscription_id")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.stripe_subscription_id) {
+    try {
+      await stripe.subscriptions.cancel(profile.stripe_subscription_id);
+    } catch {
+      // Abonnement déjà résilié/inexistant côté Stripe : on continue la suppression.
+    }
+  }
+
+  const { error } = await getAdminClient().auth.admin.deleteUser(user.id);
+  if (error) throw new Error(error.message);
 }

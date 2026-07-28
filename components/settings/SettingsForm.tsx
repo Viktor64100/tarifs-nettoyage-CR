@@ -1,10 +1,12 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Download } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Download, ShieldQuestion, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { updateProfile, exportProspectsCSV } from "@/app/(app)/settings/actions";
+import { updateProfile, exportProspectsCSV, deleteAccount } from "@/app/(app)/settings/actions";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import Field from "@/components/ui/Field";
 
 export default function SettingsForm({
@@ -17,9 +19,11 @@ export default function SettingsForm({
   const router = useRouter();
   const supabase = createClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [company, setCompany] = useState(initialCompany);
   const [goal, setGoal] = useState(initialGoal);
   const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function save() {
@@ -55,6 +59,27 @@ export default function SettingsForm({
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  async function handleDeleteAccount() {
+    const ok = await confirm({
+      title: "Supprimer définitivement ton compte ?",
+      message:
+        "Ton compte, tes prospects, ton historique d'appels et ton abonnement seront supprimés sans possibilité de récupération.",
+      confirmLabel: "Supprimer mon compte",
+      danger: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Suppression impossible.", "error");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -95,10 +120,30 @@ export default function SettingsForm({
 
       <button
         onClick={logout}
-        className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3.5 text-[15px] font-medium text-ink"
+        className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3.5 text-[15px] font-medium text-ink mb-2.5"
       >
         <LogOut size={17} /> Se déconnecter
       </button>
+
+      <Link
+        href="/privacy"
+        className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3.5 text-[15px] font-medium text-ink"
+      >
+        <ShieldQuestion size={17} /> Confidentialité et données personnelles
+      </Link>
+
+      <div className="mt-8 pt-5 border-t border-line">
+        <div className="text-xs tracking-wide uppercase text-faint font-semibold mb-2.5 px-0.5">
+          Zone dangereuse
+        </div>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="w-full flex items-center justify-center gap-2 bg-red-soft border border-line rounded-2xl py-3.5 text-[15px] font-medium text-red disabled:opacity-60"
+        >
+          <Trash2 size={17} /> {deleting ? "Suppression…" : "Supprimer mon compte"}
+        </button>
+      </div>
     </div>
   );
 }

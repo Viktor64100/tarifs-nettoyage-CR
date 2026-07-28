@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { openai } from "@/lib/openai";
 import { createClient } from "@/lib/supabase/server";
+import { checkAndBumpAiUsage } from "@/lib/ai-rate-limit";
 
 // POST multipart (champ "audio") -> { text }
 // Alternative sans coût : l'API Web Speech du navigateur (voir prototype). Ce endpoint
@@ -9,6 +10,14 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { allowed } = await checkAndBumpAiUsage(supabase, user.id);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Limite d'utilisation IA quotidienne atteinte. Réessaie demain." },
+      { status: 429 }
+    );
+  }
 
   const form = await req.formData();
   const audio = form.get("audio");
