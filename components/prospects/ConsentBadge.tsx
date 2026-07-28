@@ -1,9 +1,5 @@
 import { ShieldCheck, ShieldAlert } from "lucide-react";
-
-function fmtShort(iso: string | null) {
-  if (!iso) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso));
-}
+import { fmtTimestampShort } from "@/lib/format";
 
 export default function ConsentBadge({
   given,
@@ -19,7 +15,7 @@ export default function ConsentBadge({
       className={`inline-flex items-center gap-1.5 text-xs font-medium ${given ? "text-accent" : "text-amber"} ${center ? "justify-center" : ""}`}
     >
       {given ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
-      {given ? `Consentement OK${at ? ` · ${fmtShort(at)}` : ""}` : "Consentement à recueillir"}
+      {given ? `Consentement OK${at ? ` · ${fmtTimestampShort(at)}` : ""}` : "Consentement à recueillir"}
     </span>
   );
 }

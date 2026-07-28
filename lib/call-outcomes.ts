@@ -21,13 +21,4 @@ export const OUTCOMES: Outcome[] = [
   { key: "mauvais_numero", label: "Mauvais numéro", Icon: PhoneOff, toneClass: "text-red", kind: "terminal" },
 ];
 
-const dayMs = 86400000;
-export function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-export function addDaysISO(iso: string, n: number) {
-  return new Date(new Date(iso + "T00:00:00").getTime() + n * dayMs).toISOString().slice(0, 10);
-}
-export function fmtShortISO(iso: string) {
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso + "T00:00:00"));
-}
+export { todayISO, addDaysISO, fmtDateShort as fmtShortISO } from "@/lib/format";

@@ -63,6 +63,22 @@ html, body {
   border-radius: 4px;
 }
 
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast-in {
+  animation: toast-in 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.animate-skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
 /* Respecte la préférence système de réduction des animations. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { LogOut, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile, exportProspectsCSV } from "@/app/(app)/settings/actions";
+import { useToast } from "@/components/ui/ToastProvider";
+import Field from "@/components/ui/Field";
 
 export default function SettingsForm({
   initialCompany,
@@ -14,28 +16,24 @@ export default function SettingsForm({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const { toast } = useToast();
   const [company, setCompany] = useState(initialCompany);
   const [goal, setGoal] = useState(initialGoal);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function save() {
-    setError(null);
     startTransition(async () => {
       try {
         await updateProfile({ company, daily_goal: Math.max(1, goal || 1) });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
+        toast("Réglages enregistrés.");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Une erreur est survenue.");
+        toast(e instanceof Error ? e.message : "Une erreur est survenue.", "error");
       }
     });
   }
 
   async function exportCSV() {
-    setError(null);
     setExporting(true);
     try {
       const csv = await exportProspectsCSV();
@@ -45,8 +43,9 @@ export default function SettingsForm({
       a.download = "nextcall-prospects.csv";
       a.click();
       URL.revokeObjectURL(url);
+      toast("Export téléchargé.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Export impossible.");
+      toast(e instanceof Error ? e.message : "Export impossible.", "error");
     } finally {
       setExporting(false);
     }
@@ -61,16 +60,14 @@ export default function SettingsForm({
   return (
     <div>
       <div className="bg-card border border-line rounded-2xl p-4 mb-4">
-        <label className="block mb-3.5">
-          <div className="text-sm text-sub mb-1.5 font-medium">Entreprise</div>
+        <Field label="Entreprise">
           <input
             className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
           />
-        </label>
-        <label className="block">
-          <div className="text-sm text-sub mb-1.5 font-medium">Objectif d'appels par jour</div>
+        </Field>
+        <Field label="Objectif d'appels par jour" className="mb-0">
           <input
             type="number"
             min={1}
@@ -78,14 +75,13 @@ export default function SettingsForm({
             value={goal}
             onChange={(e) => setGoal(Number(e.target.value))}
           />
-        </label>
-        {error && <p className="text-red text-sm mt-2.5">{error}</p>}
+        </Field>
         <button
           onClick={save}
           disabled={pending}
           className="w-full mt-3.5 bg-accent text-white rounded-xl py-3 font-semibold disabled:opacity-60"
         >
-          {pending ? "…" : saved ? "Enregistré" : "Enregistrer"}
+          {pending ? "…" : "Enregistrer"}
         </button>
       </div>
 

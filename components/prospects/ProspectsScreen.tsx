@@ -1,28 +1,87 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
-import { Plus, Search, Upload, ChevronRight, ShieldAlert } from "lucide-react";
-import type { Prospect } from "@/types/db";
+import { Plus, Search, Upload, ChevronRight, Phone } from "lucide-react";
+import type { Prospect, ProspectStatus } from "@/types/db";
 import { StatusDot } from "./StatusChip";
+import Avatar from "./Avatar";
 import AddProspectSheet from "./AddProspectSheet";
+import { createProspect, type ProspectFormData } from "@/app/(app)/prospects/actions";
+import { fmtDateShort, todayISO } from "@/lib/format";
+import { STATUS } from "@/lib/prospect-status";
+import { useToast } from "@/components/ui/ToastProvider";
+import { useRouter } from "next/navigation";
 
-function fmtShort(iso: string | null) {
-  if (!iso) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso + "T00:00:00"));
-}
+type SortKey = "recent" | "name" | "relance";
+const FILTERS: { key: ProspectStatus | "tous"; label: string }[] = [
+  { key: "tous", label: "Tous" },
+  ...(Object.keys(STATUS) as ProspectStatus[]).map((key) => ({ key, label: STATUS[key].label })),
+];
 
 export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<ProspectStatus | "tous">("tous");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [adding, setAdding] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
+  const [, startTransition] = useTransition();
+  const today = todayISO();
+
+  const [optimisticProspects, addOptimistic] = useOptimistic(
+    prospects,
+    (state, next: Prospect) => [next, ...state]
+  );
+
+  async function handleCreate(data: ProspectFormData) {
+    const now = new Date().toISOString();
+    startTransition(() => {
+      addOptimistic({
+        id: `optimistic-${now}`,
+        user_id: "",
+        first_name: data.first_name,
+        last_name: data.last_name || null,
+        company: data.company || null,
+        phone: data.phone,
+        email: data.email || null,
+        sector: data.sector || null,
+        status: "nouveau",
+        next_follow_up_at: null,
+        consent_given: data.consent_given,
+        consent_at: data.consent_given ? now : null,
+        consent_source: data.consent_given ? data.consent_source || "Saisie manuelle" : null,
+        created_at: now,
+        updated_at: now,
+      });
+    });
+    try {
+      await createProspect(data);
+      toast("Prospect ajouté.");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Ajout impossible.", "error");
+    }
+  }
 
   const list = useMemo(() => {
     const needle = q.toLowerCase();
-    if (!needle) return prospects;
-    return prospects.filter((p) =>
-      `${p.first_name} ${p.last_name ?? ""} ${p.company ?? ""} ${p.phone}`.toLowerCase().includes(needle)
-    );
-  }, [prospects, q]);
+    let result = optimisticProspects.filter((p) => {
+      if (filter !== "tous" && p.status !== filter) return false;
+      if (!needle) return true;
+      return `${p.first_name} ${p.last_name ?? ""} ${p.company ?? ""} ${p.phone}`.toLowerCase().includes(needle);
+    });
+    result = [...result].sort((a, b) => {
+      if (sort === "name") return `${a.first_name} ${a.last_name ?? ""}`.localeCompare(`${b.first_name} ${b.last_name ?? ""}`);
+      if (sort === "relance") {
+        if (!a.next_follow_up_at && !b.next_follow_up_at) return 0;
+        if (!a.next_follow_up_at) return 1;
+        if (!b.next_follow_up_at) return -1;
+        return a.next_follow_up_at.localeCompare(b.next_follow_up_at);
+      }
+      return b.created_at.localeCompare(a.created_at);
+    });
+    return result;
+  }, [optimisticProspects, q, filter, sort]);
 
   return (
     <div className="px-5 pt-7">
@@ -46,7 +105,7 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
         </div>
       </div>
 
-      <div className="flex items-center gap-2 bg-card border border-line rounded-xl px-3.5 py-2.5 mb-4">
+      <div className="flex items-center gap-2 bg-card border border-line rounded-xl px-3.5 py-2.5 mb-3">
         <Search size={17} className="text-faint" />
         <input
           value={q}
@@ -56,35 +115,71 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
         />
       </div>
 
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-0.5" style={{ scrollbarWidth: "none" }}>
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium border ${
+                filter === f.key ? "bg-accent border-accent text-white" : "bg-card border-line text-sub"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end mb-3">
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          className="text-xs font-medium text-sub bg-card border border-line rounded-lg px-2.5 py-1.5"
+          aria-label="Trier"
+        >
+          <option value="recent">Plus récents</option>
+          <option value="name">Nom (A→Z)</option>
+          <option value="relance">Prochaine relance</option>
+        </select>
+      </div>
+
       <div className="flex flex-col gap-2">
-        {list.map((p) => (
-          <Link
-            key={p.id}
-            href={`/prospects/${p.id}`}
-            className="flex items-center justify-between bg-card border border-line rounded-2xl px-4 py-3.5"
-          >
-            <div className="min-w-0">
-              <div className="text-[16px] font-semibold">
-                {p.first_name} {p.last_name}
-              </div>
-              <div className="text-sm text-sub mt-0.5 truncate flex items-center gap-1.5">
-                {p.company}
-                {!p.consent_given && (
-                  <ShieldAlert size={13} className="text-amber shrink-0" aria-label="Consentement à recueillir" />
-                )}
-              </div>
+        {list.map((p) => {
+          const tel = "tel:" + p.phone.replace(/\s/g, "");
+          return (
+            <div key={p.id} className="flex items-stretch gap-2">
+              <Link
+                href={`/prospects/${p.id}`}
+                className="flex-1 flex items-center gap-3 bg-card border border-line rounded-2xl px-3.5 py-3 min-w-0"
+              >
+                <Avatar firstName={p.first_name} lastName={p.last_name} size={38} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[16px] font-semibold truncate">
+                    {p.first_name} {p.last_name}
+                  </div>
+                  <div className="text-sm text-sub mt-0.5 truncate">{p.company}</div>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {p.next_follow_up_at && !["mauvais_numero", "pas_interesse", "rdv"].includes(p.status) && (
+                    <span className={`text-xs font-display ${p.next_follow_up_at <= today ? "text-amber" : "text-faint"}`}>
+                      {fmtDateShort(p.next_follow_up_at)}
+                    </span>
+                  )}
+                  <StatusDot status={p.status} />
+                  <ChevronRight size={17} className="text-faint" />
+                </div>
+              </Link>
+              <a
+                href={tel}
+                aria-label={`Appeler ${p.first_name}`}
+                className="w-11 shrink-0 grid place-items-center bg-accent-soft border border-accent-border rounded-2xl text-accent"
+              >
+                <Phone size={17} />
+              </a>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              {p.next_follow_up_at && !["mauvais_numero", "pas_interesse", "rdv"].includes(p.status) && (
-                <span className={`text-xs font-display ${p.next_follow_up_at <= today ? "text-amber" : "text-faint"}`}>
-                  {fmtShort(p.next_follow_up_at)}
-                </span>
-              )}
-              <StatusDot status={p.status} />
-              <ChevronRight size={17} className="text-faint" />
-            </div>
-          </Link>
-        ))}
+          );
+        })}
         {!list.length && (
           <p className="text-faint text-center py-10 text-sm">
             {prospects.length ? "Aucun résultat." : "Aucun prospect. Touche + pour en ajouter."}
@@ -92,7 +187,7 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
         )}
       </div>
 
-      {adding && <AddProspectSheet onClose={() => setAdding(false)} />}
+      {adding && <AddProspectSheet onClose={() => setAdding(false)} onCreate={handleCreate} />}
     </div>
   );
 }

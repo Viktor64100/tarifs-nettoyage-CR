@@ -11,6 +11,7 @@ export type ProspectFormData = {
   email: string;
   sector: string;
   consent_given: boolean;
+  consent_source: string;
 };
 
 async function requireUser() {
@@ -34,7 +35,7 @@ export async function createProspect(data: ProspectFormData) {
     sector: data.sector.trim() || null,
     consent_given: data.consent_given,
     consent_at: data.consent_given ? now : null,
-    consent_source: data.consent_given ? "Saisie manuelle" : null,
+    consent_source: data.consent_given ? data.consent_source.trim() || "Saisie manuelle" : null,
   });
   if (error) throw new Error(error.message);
 
@@ -71,7 +72,7 @@ export async function deleteProspect(id: string) {
   redirect("/prospects");
 }
 
-export async function toggleConsent(id: string, currentlyGiven: boolean) {
+export async function toggleConsent(id: string, currentlyGiven: boolean, source?: string) {
   const { supabase } = await requireUser();
   const now = new Date().toISOString();
 
@@ -80,7 +81,7 @@ export async function toggleConsent(id: string, currentlyGiven: boolean) {
     .update(
       currentlyGiven
         ? { consent_given: false, consent_at: null, consent_source: null }
-        : { consent_given: true, consent_at: now, consent_source: "Saisie manuelle" }
+        : { consent_given: true, consent_at: now, consent_source: source?.trim() || "Saisie manuelle" }
     )
     .eq("id", id);
   if (error) throw new Error(error.message);

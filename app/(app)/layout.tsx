@@ -10,7 +10,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   return (
-    <div className="max-w-[460px] mx-auto min-h-screen pb-24">
+    <div
+      className="max-w-[460px] mx-auto min-h-screen pb-24"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       {children}
       <TabBar />
     </div>

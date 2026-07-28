@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Phone, ShieldCheck, ShieldAlert, Trash2, Pencil } from "lucide-react";
 import type { Interaction, Prospect } from "@/types/db";
@@ -7,11 +7,10 @@ import { StatusChip } from "./StatusChip";
 import ProspectForm from "./ProspectForm";
 import InteractionsTimeline from "./InteractionsTimeline";
 import { updateProspect, deleteProspect, toggleConsent, type ProspectFormData } from "@/app/(app)/prospects/actions";
-
-function fmtShort(iso: string | null) {
-  if (!iso) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso));
-}
+import { fmtTimestampShort } from "@/lib/format";
+import { useToast } from "@/components/ui/ToastProvider";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
+import Field from "@/components/ui/Field";
 
 export default function ProspectDetailScreen({
   prospect,
@@ -21,41 +20,79 @@ export default function ProspectDetailScreen({
   interactions: Interaction[];
 }) {
   const router = useRouter();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [addingConsent, setAddingConsent] = useState(false);
+  const [consentSource, setConsentSource] = useState("");
   const [pending, startTransition] = useTransition();
+  const [optimisticProspect, setOptimisticProspect] = useOptimistic(prospect);
 
   async function handleUpdate(data: ProspectFormData) {
     await updateProspect(prospect.id, data);
+    toast("Prospect mis à jour.");
     router.refresh();
     setEditing(false);
   }
 
-  function handleConsentToggle() {
-    setError(null);
+  function confirmConsentOn() {
+    const source = consentSource.trim() || "Saisie manuelle";
+    setAddingConsent(false);
     startTransition(async () => {
+      setOptimisticProspect({
+        ...prospect,
+        consent_given: true,
+        consent_at: new Date().toISOString(),
+        consent_source: source,
+      });
       try {
-        await toggleConsent(prospect.id, prospect.consent_given);
+        await toggleConsent(prospect.id, false, source);
+        toast("Consentement enregistré.");
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Une erreur est survenue.");
+        toast(e instanceof Error ? e.message : "Une erreur est survenue.", "error");
       }
     });
   }
 
-  function handleDelete() {
-    if (!confirm("Supprimer ce prospect ?")) return;
-    setError(null);
+  function revokeConsent() {
+    startTransition(async () => {
+      setOptimisticProspect({ ...prospect, consent_given: false, consent_at: null, consent_source: null });
+      try {
+        await toggleConsent(prospect.id, true);
+        toast("Consentement retiré.");
+        router.refresh();
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Une erreur est survenue.", "error");
+      }
+    });
+  }
+
+  function handleConsentClick() {
+    if (optimisticProspect.consent_given) {
+      revokeConsent();
+    } else {
+      setConsentSource("");
+      setAddingConsent(true);
+    }
+  }
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Supprimer ce prospect ?",
+      message: `${prospect.first_name} ${prospect.last_name ?? ""} et tout son historique seront définitivement supprimés.`,
+      confirmLabel: "Supprimer",
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       try {
         await deleteProspect(prospect.id);
       } catch (e) {
-        // `deleteProspect` redirige en cas de succès : Next.js signale ça via une
-        // exception spéciale qu'il ne faut surtout pas avaler, sinon la navigation casse.
         if (e && typeof e === "object" && "digest" in e && String(e.digest).startsWith("NEXT_REDIRECT")) {
           throw e;
         }
-        setError(e instanceof Error ? e.message : "Suppression impossible.");
+        toast(e instanceof Error ? e.message : "Suppression impossible.", "error");
       }
     });
   }
@@ -114,31 +151,56 @@ export default function ProspectDetailScreen({
       </a>
 
       <button
-        onClick={handleConsentToggle}
+        onClick={handleConsentClick}
         disabled={pending}
-        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mb-4 text-left"
+        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mb-1.5 text-left"
         style={{
-          background: prospect.consent_given ? "var(--color-accent-soft)" : "var(--color-amber-soft)",
-          border: `1px solid ${prospect.consent_given ? "var(--color-accent-border)" : "var(--color-amber-border)"}`,
+          background: optimisticProspect.consent_given ? "var(--color-accent-soft)" : "var(--color-amber-soft)",
+          border: `1px solid ${optimisticProspect.consent_given ? "var(--color-accent-border)" : "var(--color-amber-border)"}`,
         }}
       >
-        {prospect.consent_given ? (
+        {optimisticProspect.consent_given ? (
           <ShieldCheck size={22} className="text-accent shrink-0" />
         ) : (
           <ShieldAlert size={22} className="text-amber shrink-0" />
         )}
         <div className="flex-1">
-          <div className={`text-sm font-semibold ${prospect.consent_given ? "text-accent-dk" : "text-amber"}`}>
-            {prospect.consent_given ? "Consentement recueilli" : "Consentement non recueilli"}
+          <div className={`text-sm font-semibold ${optimisticProspect.consent_given ? "text-accent-dk" : "text-amber"}`}>
+            {optimisticProspect.consent_given ? "Consentement recueilli" : "Consentement non recueilli"}
           </div>
           <div className="text-xs text-sub mt-0.5">
-            {prospect.consent_given
-              ? `${fmtShort(prospect.consent_at)} · ${prospect.consent_source || "source non précisée"}`
+            {optimisticProspect.consent_given
+              ? `${fmtTimestampShort(optimisticProspect.consent_at)} · ${optimisticProspect.consent_source || "source non précisée"}`
               : "Requis pour démarcher un particulier (loi opt-in, 11 août 2026)"}
           </div>
         </div>
-        <span className="text-xs text-faint">modifier</span>
+        <span className="text-xs text-faint">{optimisticProspect.consent_given ? "retirer" : "recueillir"}</span>
       </button>
+
+      {addingConsent && (
+        <div className="bg-card border border-line rounded-2xl p-4 mb-4">
+          <Field label="Source du consentement">
+            <input
+              autoFocus
+              value={consentSource}
+              onChange={(e) => setConsentSource(e.target.value)}
+              placeholder="Ex. Formulaire salon, devis site web…"
+              className="w-full border border-line rounded-xl px-3.5 py-3 bg-card text-base"
+            />
+          </Field>
+          <div className="flex gap-2 mt-1">
+            <button
+              onClick={() => setAddingConsent(false)}
+              className="flex-1 bg-card border border-line rounded-xl py-2.5 text-sm font-medium"
+            >
+              Annuler
+            </button>
+            <button onClick={confirmConsentOn} className="flex-1 bg-accent text-white rounded-xl py-2.5 text-sm font-semibold">
+              Confirmer
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => setEditing(true)}
@@ -153,7 +215,6 @@ export default function ProspectDetailScreen({
       >
         <Trash2 size={15} /> Supprimer
       </button>
-      {error && <p className="text-red text-sm text-center mb-2">{error}</p>}
 
       <div className="text-xs tracking-wide uppercase text-faint font-semibold mt-4 mb-2.5 px-0.5">Historique</div>
       <InteractionsTimeline interactions={interactions} />

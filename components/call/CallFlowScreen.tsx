@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Mic, Square, Sparkles } from "lucide-react";
 import type { Prospect, InteractionType } from "@/types/db";
@@ -8,6 +8,7 @@ import ConsentBadge from "@/components/prospects/ConsentBadge";
 import { OUTCOMES, addDaysISO, fmtShortISO, todayISO, type Outcome } from "@/lib/call-outcomes";
 import { useSpeechRecognition } from "@/lib/use-speech-recognition";
 import { logCallOutcome } from "@/app/(app)/call/actions";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type Step = "ready" | "outcome" | "schedule" | "finished";
 type AiSuggestion = {
@@ -115,6 +116,12 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
         <span className="font-display tabular-nums text-faint text-sm">
           {idx + 1} / {queue.length}
         </span>
+      </div>
+      <div className="h-1 rounded-full bg-track overflow-hidden mt-3">
+        <div
+          className="h-full bg-accent rounded-full transition-all"
+          style={{ width: `${((idx + (step === "ready" ? 0 : 1)) / queue.length) * 100}%` }}
+        />
       </div>
 
       <div className="flex-1 flex flex-col justify-center pb-5">
@@ -224,6 +231,11 @@ function ScheduleStep({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const speech = useSpeechRecognition();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (speech.error) toast(speech.error, "error");
+  }, [speech.error, toast]);
 
   function toggleDictation() {
     if (speech.listening) {

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LogoMark } from "@/components/Logo";
+import Field from "@/components/ui/Field";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -14,7 +15,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function signUp() {
+  async function signUp(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true); setError(null);
     const { error } = await supabase.auth.signUp({
       email, password,
@@ -32,20 +34,43 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         <LogoMark size={30} className="mb-3" />
         <h1 className="font-display text-3xl font-semibold tracking-tight">Créer un compte</h1>
-        <p className="text-sub mt-1 mb-8">14 jours d'essai, sans carte.</p>
-        <div className="flex flex-col gap-3">
-          <input className="border border-line rounded-xl px-4 py-3 bg-card"
-            placeholder="Nom complet" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          <input className="border border-line rounded-xl px-4 py-3 bg-card"
-            placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input className="border border-line rounded-xl px-4 py-3 bg-card"
-            placeholder="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          {error && <p className="text-red text-sm">{error}</p>}
-          <button onClick={signUp} disabled={loading}
-            className="bg-accent text-white rounded-xl py-3 font-semibold disabled:opacity-60">
+        <p className="text-sub mt-1 mb-8">14 jours d&apos;essai, sans carte.</p>
+        <form onSubmit={signUp} className="flex flex-col gap-1">
+          <Field label="Nom complet">
+            <input
+              className="w-full border border-line rounded-xl px-4 py-3 bg-card text-base"
+              autoComplete="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </Field>
+          <Field label="Email">
+            <input
+              className="w-full border border-line rounded-xl px-4 py-3 bg-card text-base"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label="Mot de passe">
+            <input
+              className="w-full border border-line rounded-xl px-4 py-3 bg-card text-base"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+          {error && <p className="text-red text-sm mb-1">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-accent text-white rounded-xl py-3 font-semibold disabled:opacity-60 mt-1.5"
+          >
             {loading ? "…" : "Commencer l'essai"}
           </button>
-        </div>
+        </form>
         <p className="text-sub text-sm mt-6 text-center">
           Déjà inscrit ? <Link href="/login" className="text-accent font-medium">Se connecter</Link>
         </p>

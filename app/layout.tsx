@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 
 const description = "L'assistant qui organise votre prospection téléphonique.";
 
@@ -26,9 +28,17 @@ export const metadata: Metadata = {
     description,
     images: ["/og-image.png"],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "NextCall",
+  },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#0a7a55",
 };
 
@@ -41,7 +51,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ToastProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </ToastProvider>
+      </body>
     </html>
   );
 }

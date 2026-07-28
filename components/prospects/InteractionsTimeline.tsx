@@ -1,14 +1,11 @@
 import type { Interaction } from "@/types/db";
 import { STATUS } from "@/lib/prospect-status";
+import { fmtTimestampShort } from "@/lib/format";
 
 const EXTRA_LABELS: Record<string, string> = {
   note: "Note",
   voice_note: "Note vocale",
 };
-
-function fmtShort(iso: string) {
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(iso));
-}
 
 export default function InteractionsTimeline({ interactions }: { interactions: Interaction[] }) {
   if (!interactions.length) {
@@ -32,7 +29,7 @@ export default function InteractionsTimeline({ interactions }: { interactions: I
                 <span className="text-[14.5px] font-semibold" style={{ color }}>
                   {label}
                 </span>
-                <span className="text-xs text-faint font-display">{fmtShort(h.created_at)}</span>
+                <span className="text-xs text-faint font-display">{fmtTimestampShort(h.created_at)}</span>
               </div>
               {h.note && <div className="text-sm text-sub mt-1 leading-relaxed">{h.note}</div>}
               {h.ai_summary && (

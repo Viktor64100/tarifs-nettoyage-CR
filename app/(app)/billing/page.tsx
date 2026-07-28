@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import BillingScreen from "@/components/billing/BillingScreen";
+
+export const metadata: Metadata = { title: "Facturation" };
 
 export default async function BillingPage() {
   const supabase = await createClient();

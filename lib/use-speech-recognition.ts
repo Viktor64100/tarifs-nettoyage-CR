@@ -12,6 +12,9 @@ interface SpeechRecognitionResultLike {
 interface SpeechRecognitionEventLike {
   results: ArrayLike<SpeechRecognitionResultLike>;
 }
+interface SpeechRecognitionErrorEventLike {
+  error: string;
+}
 interface SpeechRecognitionInstance {
   lang: string;
   continuous: boolean;
@@ -19,7 +22,7 @@ interface SpeechRecognitionInstance {
   start: () => void;
   stop: () => void;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onend: (() => void) | null;
 }
 type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
@@ -33,16 +36,26 @@ function getCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  "not-allowed": "Micro refusé — autorise l'accès au micro dans les réglages du navigateur.",
+  "service-not-allowed": "Micro refusé — autorise l'accès au micro dans les réglages du navigateur.",
+  "no-speech": "Aucune voix détectée, réessaie.",
+  network: "Connexion réseau nécessaire pour la dictée.",
+  aborted: "",
+};
+
 // Dictée navigateur (gratuite, sans appel serveur). Non supportée par tous
 // les navigateurs (ex. Firefox) — `supported` permet de masquer l'option.
 export function useSpeechRecognition() {
   const [listening, setListening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [supported] = useState(() => getCtor() !== null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const start = useCallback((onTranscript: (text: string) => void) => {
     const Ctor = getCtor();
     if (!Ctor) return;
+    setError(null);
     const recognition = new Ctor();
     recognition.lang = "fr-FR";
     recognition.continuous = true;
@@ -54,7 +67,11 @@ export function useSpeechRecognition() {
       }
       onTranscript(text.trim());
     };
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = (event) => {
+      setListening(false);
+      const message = ERROR_MESSAGES[event.error];
+      if (message) setError(message);
+    };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     recognition.start();
@@ -66,5 +83,5 @@ export function useSpeechRecognition() {
     setListening(false);
   }, []);
 
-  return { supported, listening, start, stop };
+  return { supported, listening, error, start, stop };
 }

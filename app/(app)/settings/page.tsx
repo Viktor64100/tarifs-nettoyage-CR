@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BarChart3, ChevronRight, CreditCard } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import SettingsForm from "@/components/settings/SettingsForm";
+
+export const metadata: Metadata = { title: "Réglages" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();

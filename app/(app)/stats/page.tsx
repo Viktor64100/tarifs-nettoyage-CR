@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Interaction, Prospect, ProspectStatus } from "@/types/db";
 import { STATUS } from "@/lib/prospect-status";
+
+export const metadata: Metadata = { title: "Statistiques" };
 
 function startOfWeekISO() {
   const d = new Date();

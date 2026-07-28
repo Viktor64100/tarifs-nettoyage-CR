@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LogoMark } from "@/components/Logo";
+import Field from "@/components/ui/Field";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -25,7 +26,8 @@ export default function ResetPasswordPage() {
     return () => sub.subscription.unsubscribe();
   }, [supabase]);
 
-  async function updatePassword() {
+  async function updatePassword(e: React.FormEvent) {
+    e.preventDefault();
     if (password.length < 6) return setError("6 caractères minimum.");
     if (password !== confirm) return setError("Les mots de passe ne correspondent pas.");
     setLoading(true);
@@ -45,30 +47,34 @@ export default function ResetPasswordPage() {
         {!ready ? (
           <p className="text-sub text-sm">Vérification du lien…</p>
         ) : (
-          <div className="flex flex-col gap-3">
-            <input
-              className="border border-line rounded-xl px-4 py-3 bg-card"
-              placeholder="Nouveau mot de passe"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <input
-              className="border border-line rounded-xl px-4 py-3 bg-card"
-              placeholder="Confirmer le mot de passe"
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-            {error && <p className="text-red text-sm">{error}</p>}
+          <form onSubmit={updatePassword} className="flex flex-col gap-1">
+            <Field label="Nouveau mot de passe">
+              <input
+                className="w-full border border-line rounded-xl px-4 py-3 bg-card text-base"
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Field>
+            <Field label="Confirmer le mot de passe">
+              <input
+                className="w-full border border-line rounded-xl px-4 py-3 bg-card text-base"
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </Field>
+            {error && <p className="text-red text-sm mb-1">{error}</p>}
             <button
-              onClick={updatePassword}
+              type="submit"
               disabled={loading}
-              className="bg-accent text-white rounded-xl py-3 font-semibold disabled:opacity-60"
+              className="bg-accent text-white rounded-xl py-3 font-semibold disabled:opacity-60 mt-1.5"
             >
               {loading ? "…" : "Mettre à jour"}
             </button>
-          </div>
+          </form>
         )}
       </div>
     </main>

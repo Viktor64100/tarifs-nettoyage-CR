@@ -1,14 +1,16 @@
 "use client";
-import { useRouter } from "next/navigation";
 import ProspectForm from "./ProspectForm";
-import { createProspect, type ProspectFormData } from "@/app/(app)/prospects/actions";
+import type { ProspectFormData } from "@/app/(app)/prospects/actions";
 
-export default function AddProspectSheet({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
-
+export default function AddProspectSheet({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void;
+  onCreate: (data: ProspectFormData) => Promise<void>;
+}) {
   async function handleSubmit(data: ProspectFormData) {
-    await createProspect(data);
-    router.refresh();
+    await onCreate(data);
     onClose();
   }
 

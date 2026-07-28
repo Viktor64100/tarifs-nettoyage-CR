@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarClock, CircleCheck, Phone, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Prospect } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
+import { fmtLongDate, capitalize } from "@/lib/format";
+
+export const metadata: Metadata = { title: "Aujourd'hui" };
 
 function relDay(iso: string | null) {
   if (!iso) return "";
@@ -23,7 +27,7 @@ export default async function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: profile }, { data: queue }, { count: callsToday }, { count: rdvToday }] = await Promise.all([
-    supabase.from("profiles").select("daily_goal, company").single(),
+    supabase.from("profiles").select("daily_goal, company, full_name").single(),
     supabase.from("call_queue").select("*").limit(50), // vue SQL définie dans la migration
     supabase.from("interactions").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00"),
     supabase
@@ -52,9 +56,16 @@ export default async function Dashboard() {
     lastNote = lastInteraction?.note ?? null;
   }
 
+  const firstName = profile?.full_name?.trim().split(" ")[0];
+
   return (
     <div className="px-5 pt-7">
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-5">Aujourd&apos;hui</h1>
+      <div className="text-xs tracking-[0.12em] uppercase text-faint font-semibold">
+        {capitalize(fmtLongDate())}
+      </div>
+      <h1 className="font-display text-3xl font-semibold tracking-tight mt-1 mb-5">
+        {firstName ? `Bonjour ${firstName}` : "Aujourd'hui"}
+      </h1>
 
       <div className="flex gap-2.5 mb-5">
         <Stat n={calls} label="appels" />
