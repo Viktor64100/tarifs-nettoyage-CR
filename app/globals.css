@@ -11,8 +11,14 @@
   --color-accent: #0a7a55;
   --color-accent-dk: #075e42;
   --color-accent-soft: #e4f1ea;
+  --color-accent-border: #cbe6d8;
   --color-amber: #b8770f;
+  --color-amber-soft: #faefda;
+  --color-amber-border: #eedfbf;
   --color-red: #b4432e;
+  --color-red-soft: #f5e5e0;
+  --color-neutral-soft: #eef1f0;
+  --color-track: #edf1ef;
 
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", system-ui, sans-serif;
@@ -23,6 +29,31 @@ html, body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Mode sombre : suit la préférence système. Les jetons sont redéfinis sur
+   :root, donc toutes les classes utilitaires (bg-card, text-sub, etc.)
+   s'adaptent automatiquement sans rien changer dans les composants. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0e1b17;
+    --color-card: #16241f;
+    --color-ink: #eef2f0;
+    --color-sub: #9fb0a9;
+    --color-faint: #6b7d75;
+    --color-line: #26362f;
+    --color-accent: #1da579;
+    --color-accent-dk: #37c795;
+    --color-accent-soft: #113228;
+    --color-accent-border: #1f4a3b;
+    --color-amber: #e3a03d;
+    --color-amber-soft: #3a2e14;
+    --color-amber-border: #5c4a22;
+    --color-red: #e2685a;
+    --color-red-soft: #3a211d;
+    --color-neutral-soft: #1c2a24;
+    --color-track: #22302a;
+  }
 }
 
 /* Focus clavier visible et cohérent sur toute l'app (boutons, liens, champs). */

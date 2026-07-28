@@ -1,9 +1,35 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const description = "L'assistant qui organise votre prospection téléphonique.";
+
 export const metadata: Metadata = {
-  title: "NextCall",
-  description: "L'assistant qui organise votre prospection téléphonique.",
+  metadataBase: new URL("https://nextcall.tech"),
+  title: {
+    default: "NextCall",
+    template: "%s — NextCall",
+  },
+  description,
+  manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "NextCall",
+    description,
+    url: "/",
+    siteName: "NextCall",
+    locale: "fr_FR",
+    type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "NextCall" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NextCall",
+    description,
+    images: ["/og-image.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a7a55",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -14,7 +14,7 @@ export default function AddProspectSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 bg-ink/30 flex items-end justify-center z-50"
+      className="fixed inset-0 bg-black/40 flex items-end justify-center z-50"
       onClick={onClose}
     >
       <div

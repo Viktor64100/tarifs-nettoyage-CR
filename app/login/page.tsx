@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "@/components/Logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,8 +25,8 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">NextCall</h1>
-        <p className="text-sub mt-1 mb-8">Connexion à votre espace.</p>
+        <Logo size={34} wordmarkClassName="text-3xl" />
+        <p className="text-sub mt-2 mb-8">Connexion à votre espace.</p>
         <div className="flex flex-col gap-3">
           <input className="border border-line rounded-xl px-4 py-3 bg-card"
             placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />

@@ -118,8 +118,8 @@ export default function ProspectDetailScreen({
         disabled={pending}
         className="w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 mb-4 text-left"
         style={{
-          background: prospect.consent_given ? "var(--color-accent-soft)" : "#FAEFDA",
-          border: `1px solid ${prospect.consent_given ? "#CBE6D8" : "#EEDFBF"}`,
+          background: prospect.consent_given ? "var(--color-accent-soft)" : "var(--color-amber-soft)",
+          border: `1px solid ${prospect.consent_given ? "var(--color-accent-border)" : "var(--color-amber-border)"}`,
         }}
       >
         {prospect.consent_given ? (

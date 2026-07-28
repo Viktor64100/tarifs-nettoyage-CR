@@ -96,7 +96,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
         <div className="text-sub text-[15px] mt-1.5">Chaque appel est logué et les relances sont programmées.</div>
         <button
           onClick={backToDashboard}
-          className="mt-6 bg-ink text-white rounded-2xl px-7 py-3.5 text-[15.5px] font-semibold"
+          className="mt-6 bg-card border border-line text-ink rounded-2xl px-7 py-3.5 text-[15.5px] font-semibold"
         >
           Retour
         </button>
@@ -277,7 +277,7 @@ function ScheduleStep({
           <button
             onClick={() => onConfirm(ai.suggested_follow_up_date!)}
             disabled={pending}
-            className="flex justify-between items-center bg-accent-soft border border-[#CBE6D8] rounded-2xl px-4 py-[15px] disabled:opacity-50"
+            className="flex justify-between items-center bg-accent-soft border border-accent-border rounded-2xl px-4 py-[15px] disabled:opacity-50"
           >
             <span className="text-[15.5px] font-medium text-accent-dk flex items-center gap-1.5">
               <Sparkles size={14} /> Suggestion IA
@@ -336,7 +336,7 @@ function ScheduleStep({
       {aiError && <p className="text-red text-xs mt-1.5">{aiError}</p>}
 
       {ai && (
-        <div className="mt-2.5 bg-accent-soft border border-[#CBE6D8] rounded-2xl px-3.5 py-3">
+        <div className="mt-2.5 bg-accent-soft border border-accent-border rounded-2xl px-3.5 py-3">
           <div className="flex items-center gap-1.5 text-accent-dk text-xs font-semibold mb-1.5">
             <Sparkles size={13} /> Résumé suggéré
           </div>

@@ -68,7 +68,7 @@ export default async function StatsPage() {
             return (
               <div key={key} className="flex items-center gap-3">
                 <span className="text-xs text-sub w-[110px] shrink-0 truncate">{meta.label}</span>
-                <div className="flex-1 h-2 rounded-full bg-[#edf1ef] overflow-hidden">
+                <div className="flex-1 h-2 rounded-full bg-track overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${(count / maxStatusCount) * 100}%`, background: meta.color }}

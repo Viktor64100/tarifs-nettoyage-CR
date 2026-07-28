@@ -18,7 +18,7 @@ export default function TabBar() {
   return (
     <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
       <div
-        className="w-full max-w-[460px] flex bg-white/92 backdrop-blur-md border-t border-line pointer-events-auto"
+        className="w-full max-w-[460px] flex bg-card/92 backdrop-blur-md border-t border-line pointer-events-auto"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         {ITEMS.map(({ href, label, Icon }) => {

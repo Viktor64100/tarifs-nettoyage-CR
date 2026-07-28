@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { LogoMark } from "@/components/Logo";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function ResetPasswordPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
+        <LogoMark size={30} className="mb-3" />
         <h1 className="font-display text-3xl font-semibold tracking-tight">Nouveau mot de passe</h1>
         <p className="text-sub mt-1 mb-8">Choisis un nouveau mot de passe pour ton compte.</p>
         {!ready ? (

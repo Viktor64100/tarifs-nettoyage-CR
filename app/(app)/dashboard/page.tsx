@@ -71,7 +71,7 @@ export default async function Dashboard() {
             {calls} / {goal}
           </span>
         </div>
-        <div className="h-2 rounded-full bg-[#edf1ef] overflow-hidden">
+        <div className="h-2 rounded-full bg-track overflow-hidden">
           <div
             className="h-full bg-accent rounded-full transition-all"
             style={{ width: `${Math.min(100, (calls / goal) * 100)}%` }}
