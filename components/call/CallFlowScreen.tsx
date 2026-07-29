@@ -17,6 +17,7 @@ type AiSuggestion = {
   suggested_action: string | null;
   suggested_follow_up_date: string | null;
 };
+type CallPrep = { opening: string; questions: string[] };
 
 export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const router = useRouter();
@@ -28,6 +29,10 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [prep, setPrep] = useState<CallPrep | null>(null);
+  const [prepOpen, setPrepOpen] = useState(false);
+  const [prepLoading, setPrepLoading] = useState(false);
+  const [prepError, setPrepError] = useState<string | null>(null);
 
   const p = queue[idx];
 
@@ -40,11 +45,36 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
     setNote("");
     setAi(null);
     setPending(null);
+    setPrep(null);
+    setPrepOpen(false);
+    setPrepError(null);
     if (idx + 1 < queue.length) {
       setIdx((i) => i + 1);
       setStep("ready");
     } else {
       setStep("finished");
+    }
+  }
+
+  async function prepareCall() {
+    setPrepOpen(true);
+    setPrepLoading(true);
+    setPrepError(null);
+    try {
+      const res = await fetch("/api/ai/call-prep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prospectId: p.id }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Préparation indisponible pour le moment.");
+      }
+      setPrep((await res.json()) as CallPrep);
+    } catch (e) {
+      setPrepError(e instanceof Error ? e.message : "Préparation indisponible pour le moment.");
+    } finally {
+      setPrepLoading(false);
     }
   }
 
@@ -147,6 +177,44 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
           </div>
         ) : step === "ready" ? (
           <div>
+            {prepOpen && (
+              <div className="bg-accent-soft border border-accent-border rounded-2xl px-4 py-3.5 mb-3.5 text-left">
+                <div className="flex items-center gap-1.5 text-accent-dk text-xs font-semibold mb-2">
+                  <Sparkles size={13} /> Préparation de l&apos;appel
+                </div>
+                {prepLoading && <p className="text-sub text-sm">Préparation en cours…</p>}
+                {prepError && (
+                  <div>
+                    <p className="text-red text-sm">{prepError}</p>
+                    <button onClick={prepareCall} className="text-accent-dk text-xs font-semibold mt-1.5">
+                      Réessayer
+                    </button>
+                  </div>
+                )}
+                {prep && !prepLoading && (
+                  <>
+                    <p className="text-sm text-ink leading-relaxed">{prep.opening}</p>
+                    {prep.questions.length > 0 && (
+                      <ul className="mt-2.5 flex flex-col gap-1.5">
+                        {prep.questions.map((q, i) => (
+                          <li key={i} className="text-sm text-sub leading-relaxed flex gap-1.5">
+                            <span className="text-accent-dk">?</span> {q}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+            {!prepOpen && (
+              <button
+                onClick={prepareCall}
+                className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3 text-[15px] font-medium text-ink mb-3"
+              >
+                <Sparkles size={15} className="text-accent" /> Préparer cet appel
+              </button>
+            )}
             <a
               href={tel}
               onClick={() => setTimeout(() => setStep("outcome"), 250)}
