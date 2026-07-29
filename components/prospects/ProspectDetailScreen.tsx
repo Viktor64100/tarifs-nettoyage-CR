@@ -299,7 +299,7 @@ export default function ProspectDetailScreen({
       </button>
 
       <div className="text-xs tracking-wide uppercase text-faint font-semibold mt-4 mb-2.5 px-0.5">Historique</div>
-      <InteractionsTimeline interactions={interactions} />
+      <InteractionsTimeline interactions={interactions} prospect={prospect} />
     </div>
   );
 }

@@ -1,13 +1,21 @@
-import type { Interaction } from "@/types/db";
+import { CalendarPlus, Download } from "lucide-react";
+import type { Interaction, Prospect } from "@/types/db";
 import { STATUS } from "@/lib/prospect-status";
 import { fmtTimestampShort } from "@/lib/format";
+import { buildICS, downloadICS, googleCalendarUrl } from "@/lib/calendar";
 
 const EXTRA_LABELS: Record<string, string> = {
   note: "Note",
   voice_note: "Note vocale",
 };
 
-export default function InteractionsTimeline({ interactions }: { interactions: Interaction[] }) {
+export default function InteractionsTimeline({
+  interactions,
+  prospect,
+}: {
+  interactions: Interaction[];
+  prospect: Prospect;
+}) {
   if (!interactions.length) {
     return <div className="text-faint text-sm py-2">Aucun appel encore.</div>;
   }
@@ -18,6 +26,7 @@ export default function InteractionsTimeline({ interactions }: { interactions: I
         const meta = STATUS[h.type as keyof typeof STATUS];
         const label = meta?.label ?? EXTRA_LABELS[h.type] ?? h.type;
         const color = meta?.color ?? "var(--color-sub)";
+        const meetingAt = h.meeting_at ? new Date(h.meeting_at) : null;
         return (
           <div key={h.id} className="flex gap-3 pb-3.5">
             <div className="flex flex-col items-center">
@@ -47,10 +56,56 @@ export default function InteractionsTimeline({ interactions }: { interactions: I
                   ))}
                 </div>
               )}
+              {meetingAt && (
+                <MeetingActions prospect={prospect} meetingAt={meetingAt} note={h.note} />
+              )}
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function MeetingActions({
+  prospect,
+  meetingAt,
+  note,
+}: {
+  prospect: Prospect;
+  meetingAt: Date;
+  note: string | null;
+}) {
+  const title = `RDV NextCall — ${prospect.first_name} ${prospect.last_name ?? ""}`.trim();
+  const description = [prospect.company, prospect.phone, note?.trim()].filter(Boolean).join(" · ");
+  const formatted = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(meetingAt);
+
+  return (
+    <div className="mt-1.5 bg-accent-soft border border-accent-border rounded-xl px-2.5 py-2">
+      <div className="text-xs text-accent-dk font-semibold capitalize mb-1.5">{formatted}</div>
+      <div className="flex gap-1.5">
+        <a
+          href={googleCalendarUrl({ title, description, start: meetingAt })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs font-medium text-accent-dk no-underline"
+        >
+          <CalendarPlus size={12} /> Google Calendar
+        </a>
+        <span className="text-accent-border">·</span>
+        <button
+          onClick={() => downloadICS(`rdv-${prospect.first_name}.ics`, buildICS({ title, description, start: meetingAt }))}
+          className="flex items-center gap-1 text-xs font-medium text-accent-dk"
+        >
+          <Download size={12} /> .ics
+        </button>
+      </div>
     </div>
   );
 }

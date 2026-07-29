@@ -36,6 +36,7 @@ export interface Interaction {
   ai_summary: string | null;
   ai_tags: string[];
   voice_note_url: string | null;
+  meeting_at: string | null;
   created_at: string;
 }
 

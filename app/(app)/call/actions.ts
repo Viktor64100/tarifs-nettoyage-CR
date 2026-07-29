@@ -7,7 +7,13 @@ import { OUTCOMES, addDaysISO, todayISO } from "@/lib/call-outcomes";
 export async function logCallOutcome(
   prospectId: string,
   outcomeKey: InteractionType,
-  opts: { note?: string; followUpAt?: string | null; aiSummary?: string; aiTags?: string[] } = {}
+  opts: {
+    note?: string;
+    followUpAt?: string | null;
+    aiSummary?: string;
+    aiTags?: string[];
+    meetingAt?: string | null;
+  } = {}
 ) {
   const supabase = await createClient();
   const {
@@ -25,6 +31,7 @@ export async function logCallOutcome(
     note: opts.note?.trim() || null,
     ai_summary: opts.aiSummary?.trim() || null,
     ai_tags: opts.aiTags?.length ? opts.aiTags : null,
+    meeting_at: opts.meetingAt || null,
   });
   if (interactionError) throw new Error(interactionError.message);
 

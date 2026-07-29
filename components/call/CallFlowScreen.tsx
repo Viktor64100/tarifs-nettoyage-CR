@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Mic, Square, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Download, Mic, Square, Sparkles } from "lucide-react";
 import type { Prospect, InteractionType } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
@@ -9,8 +9,9 @@ import { OUTCOMES, addDaysISO, fmtShortISO, todayISO, type Outcome } from "@/lib
 import { useSpeechRecognition } from "@/lib/use-speech-recognition";
 import { logCallOutcome } from "@/app/(app)/call/actions";
 import { useToast } from "@/components/ui/ToastProvider";
+import { buildICS, downloadICS, googleCalendarUrl } from "@/lib/calendar";
 
-type Step = "ready" | "outcome" | "schedule" | "finished";
+type Step = "ready" | "outcome" | "schedule" | "rdv" | "finished";
 type AiSuggestion = {
   summary: string;
   tags: string[];
@@ -33,6 +34,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const [prepOpen, setPrepOpen] = useState(false);
   const [prepLoading, setPrepLoading] = useState(false);
   const [prepError, setPrepError] = useState<string | null>(null);
+  const [rdvConfirmed, setRdvConfirmed] = useState<Date | null>(null);
 
   const p = queue[idx];
 
@@ -48,6 +50,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
     setPrep(null);
     setPrepOpen(false);
     setPrepError(null);
+    setRdvConfirmed(null);
     if (idx + 1 < queue.length) {
       setIdx((i) => i + 1);
       setStep("ready");
@@ -78,7 +81,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
     }
   }
 
-  function commit(outcome: Outcome, followUpAt?: string | null) {
+  function commit(outcome: Outcome, followUpAt?: string | null, meetingAt?: Date) {
     setError(null);
     startTransition(async () => {
       try {
@@ -87,19 +90,23 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
           followUpAt,
           aiSummary: ai?.summary,
           aiTags: ai?.tags,
+          meetingAt: meetingAt?.toISOString(),
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Impossible d'enregistrer ce résultat.");
         return;
       }
-      const msg =
-        outcome.kind === "won"
-          ? "Rendez-vous enregistré 🎯"
-          : followUpAt
-            ? `Relance programmée ${fmtShortISO(followUpAt)}`
-            : outcome.kind === "requeue"
-              ? "Reprogrammé dans 2 jours"
-              : "Enregistré";
+      if (meetingAt) {
+        // Le RDV a une action de suivi concrète (ajouter au calendrier) : pas d'auto-avance,
+        // on laisse la main à l'utilisateur.
+        setRdvConfirmed(meetingAt);
+        return;
+      }
+      const msg = followUpAt
+        ? `Relance programmée ${fmtShortISO(followUpAt)}`
+        : outcome.kind === "requeue"
+          ? "Reprogrammé dans 2 jours"
+          : "Enregistré";
       setConfirmMsg(msg);
       setTimeout(() => {
         setConfirmMsg(null);
@@ -109,7 +116,10 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   }
 
   function pick(outcome: Outcome) {
-    if (outcome.kind === "schedule" || outcome.kind === "requeue") {
+    if (outcome.key === "rdv") {
+      setPending(outcome);
+      setStep("rdv");
+    } else if (outcome.kind === "schedule" || outcome.kind === "requeue") {
       setPending(outcome);
       setStep("schedule");
     } else {
@@ -169,7 +179,9 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
 
         {error && <p className="text-red text-sm text-center mb-3">{error}</p>}
 
-        {confirmMsg ? (
+        {rdvConfirmed ? (
+          <RdvConfirmed prospect={p} meetingAt={rdvConfirmed} note={note} onContinue={advance} />
+        ) : confirmMsg ? (
           <div className="text-center py-6">
             <span className="inline-flex items-center gap-2 bg-accent-soft text-accent-dk px-5 py-3 rounded-full text-[15px] font-semibold">
               <Check size={17} /> {confirmMsg}
@@ -251,6 +263,16 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
               ))}
             </div>
           </div>
+        ) : step === "rdv" ? (
+          pending && (
+            <RdvStep
+              note={note}
+              setNote={setNote}
+              pending={isPending}
+              onConfirm={(date) => commit(pending, undefined, date)}
+              onBack={() => setStep("outcome")}
+            />
+          )
         ) : (
           pending && (
             <ScheduleStep
@@ -266,6 +288,157 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
           )
         )}
       </div>
+    </div>
+  );
+}
+
+function RdvStep({
+  note,
+  setNote,
+  pending,
+  onConfirm,
+  onBack,
+}: {
+  note: string;
+  setNote: (v: string) => void;
+  pending: boolean;
+  onConfirm: (date: Date) => void;
+  onBack: () => void;
+}) {
+  const t = todayISO();
+  const presets = [
+    { label: "Demain 10h", iso: addDaysISO(t, 1), time: "10:00" },
+    { label: "Dans 2 jours 10h", iso: addDaysISO(t, 2), time: "10:00" },
+    { label: "Dans 1 semaine 10h", iso: addDaysISO(t, 7), time: "10:00" },
+  ];
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("10:00");
+
+  function pickPreset(iso: string, presetTime: string) {
+    setDate(iso);
+    setTime(presetTime);
+  }
+
+  function confirm() {
+    if (!date || !time) return;
+    onConfirm(new Date(`${date}T${time}:00`));
+  }
+
+  return (
+    <div>
+      <div className="text-center text-faint text-[13px] tracking-wide uppercase font-semibold mb-3.5">
+        Quand est le rendez-vous ?
+      </div>
+      <div className="flex flex-col gap-2">
+        {presets.map((pr) => (
+          <button
+            key={pr.label}
+            onClick={() => pickPreset(pr.iso, pr.time)}
+            disabled={pending}
+            className={`flex justify-between items-center rounded-2xl px-4 py-[15px] border disabled:opacity-50 ${
+              date === pr.iso && time === pr.time
+                ? "bg-accent-soft border-accent-border"
+                : "bg-card border-line"
+            }`}
+          >
+            <span className="text-[15.5px] font-medium">{pr.label}</span>
+            <span className="text-faint text-sm font-display flex items-center gap-1">
+              {fmtShortISO(pr.iso)} <ChevronRight size={15} />
+            </span>
+          </button>
+        ))}
+        <div className="flex gap-2 items-center">
+          <input
+            type="date"
+            value={date}
+            min={t}
+            onChange={(e) => setDate(e.target.value)}
+            className="flex-1 border border-line rounded-2xl px-3.5 py-3 text-base bg-card"
+          />
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-[110px] border border-line rounded-2xl px-3 py-3 text-base bg-card"
+          />
+        </div>
+      </div>
+
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        rows={2}
+        placeholder="Note sur le RDV (optionnel) : lieu, points à préparer…"
+        className="w-full mt-3 border border-line rounded-2xl px-3.5 py-3 text-base resize-none bg-card"
+      />
+
+      <button
+        onClick={confirm}
+        disabled={!date || !time || pending}
+        className="w-full mt-3 bg-accent text-white rounded-2xl py-3.5 font-semibold disabled:bg-line disabled:text-faint"
+      >
+        {pending ? "…" : "Confirmer le rendez-vous"}
+      </button>
+      <button onClick={onBack} className="w-full mt-2 bg-transparent border-none text-faint text-sm py-1.5">
+        ← Autre résultat
+      </button>
+    </div>
+  );
+}
+
+function RdvConfirmed({
+  prospect,
+  meetingAt,
+  note,
+  onContinue,
+}: {
+  prospect: Prospect;
+  meetingAt: Date;
+  note: string;
+  onContinue: () => void;
+}) {
+  const title = `RDV NextCall — ${prospect.first_name} ${prospect.last_name ?? ""}`.trim();
+  const description = [prospect.company, prospect.phone, note.trim()].filter(Boolean).join(" · ");
+  const formatted = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(meetingAt);
+
+  function handleDownload() {
+    downloadICS(`rdv-${prospect.first_name}.ics`, buildICS({ title, description, start: meetingAt }));
+  }
+
+  return (
+    <div className="text-center py-4">
+      <div className="w-14 h-14 rounded-full bg-accent-soft grid place-items-center mx-auto mb-3">
+        <CircleCheck size={28} className="text-accent" />
+      </div>
+      <div className="font-display text-xl font-semibold">Rendez-vous confirmé</div>
+      <div className="text-sub text-[15px] mt-1 capitalize">{formatted}</div>
+
+      <div className="flex gap-2 mt-5">
+        <a
+          href={googleCalendarUrl({ title, description, start: meetingAt })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-accent text-white rounded-2xl py-3 text-sm font-semibold no-underline"
+        >
+          Google Calendar
+        </a>
+        <button
+          onClick={handleDownload}
+          className="flex-1 flex items-center justify-center gap-1.5 bg-card border border-line rounded-2xl py-3 text-sm font-medium text-ink"
+        >
+          <Download size={14} /> .ics
+        </button>
+      </div>
+
+      <button onClick={onContinue} className="w-full mt-3 bg-transparent border-none text-faint text-sm py-2">
+        Continuer
+      </button>
     </div>
   );
 }
