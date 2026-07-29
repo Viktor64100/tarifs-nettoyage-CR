@@ -1,0 +1,131 @@
+name: Mobile build (iOS + Android)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "ios/**"
+      - "capacitor.config.ts"
+      - "public/**"
+      - "package.json"
+      - ".github/workflows/mobile-build.yml"
+
+jobs:
+  android-debug:
+    name: Android (debug APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      # Release AAB (signed) — only runs once signing secrets are configured.
+      # See docs/mobile-release-guide.md for how to generate/upload the keystore.
+      - name: Build signed release AAB
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=release.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('android/app/build/outputs/bundle/release/app-release.aab') != '' }}
+        with:
+          name: android-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+  ios-build:
+    name: iOS (simulator build; signed archive once certs are configured)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx cap sync ios
+
+      # Always-on sanity build: compiles for the simulator, no signing needed.
+      # This is enough to catch native build breakage on every push.
+      - name: Build for simulator (unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            build
+
+      # Signed .ipa for TestFlight / App Store — only runs once signing secrets
+      # are configured. See docs/mobile-release-guide.md.
+      - name: Import signing certificate & profile
+        if: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 != '' }}
+        env:
+          IOS_DIST_CERTIFICATE_BASE64: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 }}
+          IOS_DIST_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DIST_CERTIFICATE_PASSWORD }}
+          IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          echo "$IOS_DIST_CERTIFICATE_BASE64" | base64 -d > cert.p12
+          security import cert.p12 -k build.keychain -P "$IOS_DIST_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROVISION_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Archive & export signed IPA
+        if: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 != '' }}
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ios/ExportOptions.plist
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('build/ipa/*.ipa') != '' }}
+        with:
+          name: ios-release-ipa
+          path: build/ipa/*.ipa
