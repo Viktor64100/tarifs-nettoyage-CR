@@ -10,6 +10,7 @@ import { useSpeechRecognition } from "@/lib/use-speech-recognition";
 import { logCallOutcome } from "@/app/(app)/call/actions";
 import { useToast } from "@/components/ui/ToastProvider";
 import { buildICS, downloadICS, googleCalendarUrl } from "@/lib/calendar";
+import { hapticSuccess, hapticTick } from "@/lib/native";
 
 type Step = "ready" | "outcome" | "schedule" | "rdv" | "finished" | "sprintDone";
 type AiSuggestion = {
@@ -134,9 +135,11 @@ export default function CallFlowScreen({
       if (meetingAt) {
         // Le RDV a une action de suivi concrète (ajouter au calendrier) : pas d'auto-avance,
         // on laisse la main à l'utilisateur.
+        hapticSuccess();
         setRdvConfirmed(meetingAt);
         return;
       }
+      hapticTick();
       const msg = followUpAt
         ? `Relance programmée ${fmtShortISO(followUpAt)}`
         : outcome.kind === "requeue"

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NextCall</string>
+    <string name="title_activity_main">NextCall</string>
+    <string name="package_name">tech.nextcall.app</string>
+    <string name="custom_url_scheme">tech.nextcall.app</string>
+</resources>
