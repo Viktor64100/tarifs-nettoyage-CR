@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { ChevronLeft, Clock3 } from "lucide-react";
+import { ChevronLeft, Clock3, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Interaction, Prospect, ProspectStatus } from "@/types/db";
 import { STATUS } from "@/lib/prospect-status";
 import { bestCallTimes } from "@/lib/best-time";
+import { computeTrends } from "@/lib/trends";
 
 export const metadata: Metadata = { title: "Statistiques" };
 
@@ -28,6 +29,7 @@ export default async function StatsPage() {
   const interactions = (interactionsData ?? []) as Interaction[];
   const weekStart = startOfWeekISO();
   const bestTimes = bestCallTimes(interactions, profile?.timezone || "Europe/Paris");
+  const trends = computeTrends(interactions);
 
   const statusCounts = prospects.reduce(
     (acc, p) => {
@@ -113,6 +115,42 @@ export default async function StatsPage() {
           <p className="text-faint text-sm leading-relaxed">
             Pas encore assez d&apos;appels pour identifier tes meilleurs créneaux. Reviens dans quelques jours —
             plus tu utilises NextCall, plus cette analyse devient précise.
+          </p>
+        )}
+      </div>
+
+      <div className="bg-card border border-line rounded-2xl p-4 mt-5">
+        <div className="flex items-center gap-1.5 text-sm text-sub font-medium mb-3">
+          <TrendingUp size={15} className="text-accent" /> Ce qui revient le plus souvent
+        </div>
+        {trends ? (
+          <div className="flex flex-col gap-3.5">
+            {trends.topObjection && (
+              <div className="bg-red-soft border border-line rounded-xl px-3 py-2.5">
+                <div className="text-xs text-red font-semibold">Objection la plus fréquente</div>
+                <div className="text-sm text-ink mt-0.5">
+                  {trends.topObjection.tag}{" "}
+                  <span className="text-faint">
+                    ({trends.topObjection.count} appel{trends.topObjection.count > 1 ? "s" : ""})
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {trends.topTags.map((t) => (
+                <span
+                  key={t.tag}
+                  className="text-xs bg-bg border border-line rounded-full px-2.5 py-1 text-sub flex items-center gap-1"
+                >
+                  {t.tag} <span className="text-faint font-display tabular-nums">{t.count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-faint text-sm leading-relaxed">
+            Utilise le résumé IA après tes appels (bouton « Résumer avec l&apos;IA ») pour faire apparaître ici les
+            sujets qui reviennent le plus souvent.
           </p>
         )}
       </div>
