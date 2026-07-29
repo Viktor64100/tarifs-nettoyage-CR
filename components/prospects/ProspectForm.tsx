@@ -103,6 +103,9 @@ export default function ProspectForm({
             />
             <span className="text-sm text-sub">Consentement au démarchage recueilli</span>
           </label>
+          <p className="text-xs text-faint -mt-0.5 mb-1 pl-[30px]">
+            Obligatoire pour démarcher un particulier (loi opt-in du 11/08/2026). Laisse décoché si tu n&apos;as pas encore la preuve.
+          </p>
           {f.consent_given && (
             <Field label="Source du consentement" className="mt-1.5">
               <input
