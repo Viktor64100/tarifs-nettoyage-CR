@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarClock, CircleCheck, Flame, Phone, Target, Timer, Upload, UserPlus } from "lucide-react";
+import { CalendarClock, CircleCheck, Flame, Phone, Sparkles, Target, Timer, Upload, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Prospect } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
 import { fmtLongDate, capitalize } from "@/lib/format";
 import { sortByPriority } from "@/lib/queue-priority";
+import { getWeeklyCoaching } from "@/lib/weekly-coaching";
 
 export const metadata: Metadata = { title: "Aujourd'hui" };
 
@@ -72,6 +73,12 @@ export default async function Dashboard() {
   const activeDates = new Set((recentInteractions ?? []).map((i) => (i.created_at as string).slice(0, 10)));
   const streak = computeStreak(activeDates, today);
 
+  let weeklyCoaching: string | null = null;
+  if (hasAnyProspect) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) weeklyCoaching = await getWeeklyCoaching(supabase, user.id);
+  }
+
   let lastNote: string | null = null;
   if (next) {
     const { data: lastInteraction } = await supabase
@@ -101,6 +108,13 @@ export default async function Dashboard() {
       <h1 className="font-display text-3xl font-semibold tracking-tight mt-1 mb-5">
         {firstName ? `Bonjour ${firstName}` : "Aujourd'hui"}
       </h1>
+
+      {weeklyCoaching && (
+        <div className="flex items-start gap-2.5 bg-accent-soft border border-accent-border rounded-2xl px-4 py-3.5 mb-5">
+          <Sparkles size={16} className="text-accent-dk shrink-0 mt-0.5" />
+          <p className="text-sm text-accent-dk leading-relaxed">{weeklyCoaching}</p>
+        </div>
+      )}
 
       {!hasAnyProspect ? (
         <div className="bg-card border border-line rounded-2xl px-5 py-9 text-center">
