@@ -6,6 +6,7 @@ import type { Prospect } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
 import { fmtLongDate, capitalize } from "@/lib/format";
+import { sortByPriority } from "@/lib/queue-priority";
 
 export const metadata: Metadata = { title: "Aujourd'hui" };
 
@@ -61,7 +62,7 @@ export default async function Dashboard() {
     supabase.from("interactions").select("created_at").gte("created_at", streakWindowStart),
   ]);
 
-  const q = (queue ?? []) as Prospect[];
+  const q = sortByPriority((queue ?? []) as Prospect[], today);
   const goal = profile?.daily_goal ?? 30;
   const calls = callsToday ?? 0;
   const rdv = rdvToday ?? 0;
