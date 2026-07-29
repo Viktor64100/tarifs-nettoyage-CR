@@ -48,13 +48,21 @@ jobs:
       - name: Build signed release AAB
         if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$GITHUB_WORKSPACE/android/app/release.keystore"
+          # Secrets pasted via the GitHub UI can carry a trailing newline/space —
+          # trim before use so a copy-paste artifact doesn't break signing.
+          trim() { printf '%s' "$1" | tr -d '[:space:]'; }
+          echo "$(trim "$ANDROID_KEYSTORE_BASE64")" | base64 -d > "$GITHUB_WORKSPACE/android/app/release.keystore"
           ./gradlew bundleRelease --no-daemon \
             -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/app/release.keystore" \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+            -Pandroid.injected.signing.store.password="$(trim "$ANDROID_KEYSTORE_PASSWORD")" \
+            -Pandroid.injected.signing.key.alias="$(trim "$ANDROID_KEY_ALIAS")" \
+            -Pandroid.injected.signing.key.password="$(trim "$ANDROID_KEY_PASSWORD")"
 
       - uses: actions/upload-artifact@v4
         with:
