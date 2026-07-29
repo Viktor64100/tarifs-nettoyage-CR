@@ -16,6 +16,8 @@ jobs:
   android-debug:
     name: Android (debug APK)
     runs-on: ubuntu-latest
+    env:
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +46,7 @@ jobs:
       # Release AAB (signed) — only runs once signing secrets are configured.
       # See docs/mobile-release-guide.md for how to generate/upload the keystore.
       - name: Build signed release AAB
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         working-directory: android
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
@@ -69,6 +71,8 @@ jobs:
   ios-build:
     name: iOS (simulator build; signed archive once certs are configured)
     runs-on: macos-latest
+    env:
+      HAS_IOS_SIGNING: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -95,7 +99,7 @@ jobs:
       # Signed .ipa for TestFlight / App Store — only runs once signing secrets
       # are configured. See docs/mobile-release-guide.md.
       - name: Import signing certificate & profile
-        if: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 != '' }}
+        if: ${{ env.HAS_IOS_SIGNING == 'true' }}
         env:
           IOS_DIST_CERTIFICATE_BASE64: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 }}
           IOS_DIST_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DIST_CERTIFICATE_PASSWORD }}
@@ -112,7 +116,7 @@ jobs:
           echo "$IOS_PROVISION_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
       - name: Archive & export signed IPA
-        if: ${{ secrets.IOS_DIST_CERTIFICATE_BASE64 != '' }}
+        if: ${{ env.HAS_IOS_SIGNING == 'true' }}
         run: |
           xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
