@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Clock3 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Interaction, Prospect, ProspectStatus } from "@/types/db";
 import { STATUS } from "@/lib/prospect-status";
+import { bestCallTimes } from "@/lib/best-time";
 
 export const metadata: Metadata = { title: "Statistiques" };
 
@@ -17,14 +18,16 @@ function startOfWeekISO() {
 
 export default async function StatsPage() {
   const supabase = await createClient();
-  const [{ data: prospectsData }, { data: interactionsData }] = await Promise.all([
+  const [{ data: prospectsData }, { data: interactionsData }, { data: profile }] = await Promise.all([
     supabase.from("prospects").select("*"),
     supabase.from("interactions").select("*"),
+    supabase.from("profiles").select("timezone").single(),
   ]);
 
   const prospects = (prospectsData ?? []) as Prospect[];
   const interactions = (interactionsData ?? []) as Interaction[];
   const weekStart = startOfWeekISO();
+  const bestTimes = bestCallTimes(interactions, profile?.timezone || "Europe/Paris");
 
   const statusCounts = prospects.reduce(
     (acc, p) => {
@@ -83,6 +86,35 @@ export default async function StatsPage() {
           })}
           {!prospects.length && <p className="text-faint text-sm text-center py-4">Aucune donnée pour l&apos;instant.</p>}
         </div>
+      </div>
+
+      <div className="bg-card border border-line rounded-2xl p-4 mt-5">
+        <div className="flex items-center gap-1.5 text-sm text-sub font-medium mb-3">
+          <Clock3 size={15} className="text-accent" /> Tes meilleurs créneaux d&apos;appel
+        </div>
+        {bestTimes.length ? (
+          <div className="flex flex-col gap-2.5">
+            {bestTimes.slice(0, 3).map((slot, i) => (
+              <div key={slot.label} className="flex items-center gap-3">
+                <span className={`text-xs font-display w-5 shrink-0 ${i === 0 ? "text-accent" : "text-faint"}`}>
+                  {i + 1}
+                </span>
+                <span className="text-sm font-medium flex-1">{slot.label}</span>
+                <span className="text-xs text-faint">
+                  {slot.answered}/{slot.attempts} décrochés
+                </span>
+                <span className="text-sm font-display tabular-nums text-accent-dk w-10 text-right">
+                  {Math.round(slot.rate * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-faint text-sm leading-relaxed">
+            Pas encore assez d&apos;appels pour identifier tes meilleurs créneaux. Reviens dans quelques jours —
+            plus tu utilises NextCall, plus cette analyse devient précise.
+          </p>
+        )}
       </div>
     </div>
   );
