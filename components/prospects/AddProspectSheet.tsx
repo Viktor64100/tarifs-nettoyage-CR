@@ -8,13 +8,13 @@ export default function AddProspectSheet({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (data: ProspectFormData) => Promise<void>;
+  onCreate: (data: ProspectFormData) => Promise<boolean>;
 }) {
   useModalBehavior(onClose);
 
   async function handleSubmit(data: ProspectFormData) {
-    await onCreate(data);
-    onClose();
+    const created = await onCreate(data);
+    if (created) onClose();
   }
 
   return (

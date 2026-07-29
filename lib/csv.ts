@@ -1,4 +1,5 @@
 import type { ImportRow } from "@/app/(app)/prospects/actions";
+import { normalizePhoneKey } from "@/lib/format";
 
 function detectDelimiter(text: string): string {
   const firstLine = text.split(/\r?\n/).find((l) => l.trim().length) ?? "";
@@ -86,8 +87,13 @@ function normalizeHeader(h: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-export function mapRowsToProspects(rows: string[][]) {
-  if (!rows.length) return { imported: [] as ImportRow[], skippedCount: 0, usedHeader: false };
+// `existingPhoneKeys` : numéros déjà présents en base (clés normalisées, cf. normalizePhoneKey).
+// Une ligne dont le téléphone matche un prospect existant OU une ligne précédente du même
+// fichier est exclue de `imported` et comptée dans `duplicateCount` plutôt que d'être importée.
+export function mapRowsToProspects(rows: string[][], existingPhoneKeys: ReadonlySet<string> = new Set()) {
+  if (!rows.length) {
+    return { imported: [] as ImportRow[], skippedCount: 0, duplicateCount: 0, usedHeader: false };
+  }
 
   const mappedHeader = rows[0].map((h) => HEADER_ALIASES[normalizeHeader(h)]);
   const recognizedCount = mappedHeader.filter(Boolean).length;
@@ -99,7 +105,9 @@ export function mapRowsToProspects(rows: string[][]) {
   const dataRows = usedHeader ? rows.slice(1) : rows;
 
   const imported: ImportRow[] = [];
+  const seen = new Set(existingPhoneKeys);
   let skippedCount = 0;
+  let duplicateCount = 0;
 
   for (const r of dataRows) {
     const obj: Partial<ImportRow> = {};
@@ -108,12 +116,18 @@ export function mapRowsToProspects(rows: string[][]) {
       const val = (r[idx] ?? "").trim();
       if (val) obj[field] = val;
     });
-    if (obj.first_name && obj.phone) {
-      imported.push(obj as ImportRow);
-    } else {
+    if (!obj.first_name || !obj.phone) {
       skippedCount++;
+      continue;
     }
+    const key = normalizePhoneKey(obj.phone);
+    if (key && seen.has(key)) {
+      duplicateCount++;
+      continue;
+    }
+    if (key) seen.add(key);
+    imported.push(obj as ImportRow);
   }
 
-  return { imported, skippedCount, usedHeader };
+  return { imported, skippedCount, duplicateCount, usedHeader };
 }

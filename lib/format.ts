@@ -40,3 +40,10 @@ export function formatPhoneFR(raw: string): string {
   const grouped = digits.replace(/(\d{2})(?=\d)/g, "$1 ");
   return hasPlus ? `+${grouped}` : grouped;
 }
+
+// Clé de comparaison pour détecter les doublons, insensible au format et à
+// l'indicatif : "06 12 34 56 78", "+33 6 12 34 56 78" et "0033612345678"
+// donnent tous "612345678" (9 derniers chiffres significatifs en France).
+export function normalizePhoneKey(raw: string): string {
+  return raw.replace(/\D/g, "").slice(-9);
+}

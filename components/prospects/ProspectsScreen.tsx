@@ -8,7 +8,7 @@ import Avatar from "./Avatar";
 import AddProspectSheet from "./AddProspectSheet";
 import SwipeableRow from "./SwipeableRow";
 import { createProspect, deleteProspect, type ProspectFormData } from "@/app/(app)/prospects/actions";
-import { fmtDateShort, todayISO } from "@/lib/format";
+import { fmtDateShort, normalizePhoneKey, todayISO } from "@/lib/format";
 import { STATUS } from "@/lib/prospect-status";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -42,7 +42,19 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
         : state.filter((p) => p.id !== action.id)
   );
 
-  async function handleCreate(data: ProspectFormData) {
+  async function handleCreate(data: ProspectFormData): Promise<boolean> {
+    const key = normalizePhoneKey(data.phone);
+    const dup = key && optimisticProspects.find((p) => normalizePhoneKey(p.phone) === key);
+    if (dup) {
+      const proceed = await confirm({
+        title: "Numéro déjà enregistré",
+        message: `${dup.first_name} ${dup.last_name ?? ""} a déjà ce numéro (ou un numéro très proche). Ajouter quand même ce prospect ?`,
+        confirmLabel: "Ajouter quand même",
+        cancelLabel: "Annuler",
+      });
+      if (!proceed) return false;
+    }
+
     const now = new Date().toISOString();
     startTransition(() => {
       dispatchOptimistic({
@@ -73,6 +85,7 @@ export default function ProspectsScreen({ prospects }: { prospects: Prospect[] }
     } catch (e) {
       toast(e instanceof Error ? e.message : "Ajout impossible.", "error");
     }
+    return true;
   }
 
   async function handleDelete(p: Prospect) {
