@@ -1,7 +1,7 @@
 "use client";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Phone, ShieldCheck, ShieldAlert, Trash2, Pencil } from "lucide-react";
+import { ChevronLeft, Copy, MessageSquareText, Phone, ShieldCheck, ShieldAlert, Sparkles, Trash2, Pencil } from "lucide-react";
 import type { Interaction, Prospect } from "@/types/db";
 import { StatusChip } from "./StatusChip";
 import ProspectForm from "./ProspectForm";
@@ -27,6 +27,43 @@ export default function ProspectDetailScreen({
   const [consentSource, setConsentSource] = useState("");
   const [pending, startTransition] = useTransition();
   const [optimisticProspect, setOptimisticProspect] = useOptimistic(prospect);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [followUpText, setFollowUpText] = useState<string | null>(null);
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
+
+  async function generateFollowUp() {
+    setFollowUpOpen(true);
+    setFollowUpLoading(true);
+    setFollowUpError(null);
+    try {
+      const res = await fetch("/api/ai/follow-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prospectId: prospect.id }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Message indisponible pour le moment.");
+      }
+      const data = (await res.json()) as { message: string };
+      setFollowUpText(data.message);
+    } catch (e) {
+      setFollowUpError(e instanceof Error ? e.message : "Message indisponible pour le moment.");
+    } finally {
+      setFollowUpLoading(false);
+    }
+  }
+
+  async function copyFollowUp() {
+    if (!followUpText) return;
+    try {
+      await navigator.clipboard.writeText(followUpText);
+      toast("Message copié.");
+    } catch {
+      toast("Copie impossible sur cet appareil.", "error");
+    }
+  }
 
   async function handleUpdate(data: ProspectFormData) {
     await updateProspect(prospect.id, data);
@@ -199,6 +236,52 @@ export default function ProspectDetailScreen({
             </button>
           </div>
         </div>
+      )}
+
+      {followUpOpen ? (
+        <div className="bg-card border border-line rounded-2xl p-4 mb-2.5">
+          <div className="flex items-center gap-1.5 text-accent-dk text-xs font-semibold mb-2">
+            <Sparkles size={13} /> Message de relance
+          </div>
+          {followUpLoading && <p className="text-sub text-sm">Rédaction en cours…</p>}
+          {followUpError && (
+            <div>
+              <p className="text-red text-sm">{followUpError}</p>
+              <button onClick={generateFollowUp} className="text-accent-dk text-xs font-semibold mt-1.5">
+                Réessayer
+              </button>
+            </div>
+          )}
+          {followUpText && !followUpLoading && (
+            <>
+              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{followUpText}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={copyFollowUp}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-accent text-white rounded-xl py-2.5 text-sm font-semibold"
+                >
+                  <Copy size={14} /> Copier
+                </button>
+                <button
+                  onClick={generateFollowUp}
+                  className="flex-1 bg-card border border-line rounded-xl py-2.5 text-sm font-medium text-ink"
+                >
+                  Régénérer
+                </button>
+              </div>
+            </>
+          )}
+          <button onClick={() => setFollowUpOpen(false)} className="text-faint text-xs mt-3">
+            Fermer
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={generateFollowUp}
+          className="w-full flex items-center justify-center gap-2 bg-card border border-line rounded-2xl py-3 text-[15px] font-medium mb-2.5"
+        >
+          <MessageSquareText size={15} /> Message de relance
+        </button>
       )}
 
       <button
