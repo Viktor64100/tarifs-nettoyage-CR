@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarClock, CircleCheck, Flame, Phone, Target, Upload, UserPlus } from "lucide-react";
+import { CalendarClock, CircleCheck, Flame, Phone, Target, Timer, Upload, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Prospect } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
@@ -187,9 +187,17 @@ export default async function Dashboard() {
                 <Phone size={19} /> Appeler le prochain prospect
               </Link>
               {q.length > 1 && (
-                <div className="text-center text-faint text-[13.5px] mt-3">
-                  {q.length - 1} autre{q.length > 2 ? "s" : ""} dans la file
-                </div>
+                <>
+                  <div className="text-center text-faint text-[13.5px] mt-3">
+                    {q.length - 1} autre{q.length > 2 ? "s" : ""} dans la file
+                  </div>
+                  <Link
+                    href="/call?sprint=20"
+                    className="w-full mt-2.5 flex items-center justify-center gap-1.5 text-accent-dk text-sm font-semibold py-1.5"
+                  >
+                    <Timer size={15} /> Lancer un sprint de 20 min
+                  </Link>
+                </>
               )}
             </>
           ) : (

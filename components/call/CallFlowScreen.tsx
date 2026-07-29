@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Download, Mic, Square, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Phone, Check, CircleCheck, Download, Mic, Square, Sparkles, Timer } from "lucide-react";
 import type { Prospect, InteractionType } from "@/types/db";
 import { StatusChip } from "@/components/prospects/StatusChip";
 import ConsentBadge from "@/components/prospects/ConsentBadge";
@@ -11,7 +11,7 @@ import { logCallOutcome } from "@/app/(app)/call/actions";
 import { useToast } from "@/components/ui/ToastProvider";
 import { buildICS, downloadICS, googleCalendarUrl } from "@/lib/calendar";
 
-type Step = "ready" | "outcome" | "schedule" | "rdv" | "finished";
+type Step = "ready" | "outcome" | "schedule" | "rdv" | "finished" | "sprintDone";
 type AiSuggestion = {
   summary: string;
   tags: string[];
@@ -20,7 +20,19 @@ type AiSuggestion = {
 };
 type CallPrep = { opening: string; questions: string[] };
 
-export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
+function formatCountdown(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export default function CallFlowScreen({
+  queue,
+  sprintMinutes = null,
+}: {
+  queue: Prospect[];
+  sprintMinutes?: number | null;
+}) {
   const router = useRouter();
   const [idx, setIdx] = useState(0);
   const [step, setStep] = useState<Step>("ready");
@@ -35,8 +47,28 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
   const [prepLoading, setPrepLoading] = useState(false);
   const [prepError, setPrepError] = useState<string | null>(null);
   const [rdvConfirmed, setRdvConfirmed] = useState<Date | null>(null);
+  const [sprintActive, setSprintActive] = useState(sprintMinutes !== null);
+  const [sprintSecondsLeft, setSprintSecondsLeft] = useState(sprintMinutes ? sprintMinutes * 60 : 0);
+  const [sprintEnded, setSprintEnded] = useState(false);
+  const [sessionStats, setSessionStats] = useState({ calls: 0, rdv: 0 });
 
   const p = queue[idx];
+
+  useEffect(() => {
+    if (!sprintActive || sprintEnded || step === "finished") return;
+    if (sprintSecondsLeft <= 0) {
+      setSprintEnded(true);
+      return;
+    }
+    const t = setTimeout(() => setSprintSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [sprintActive, sprintEnded, sprintSecondsLeft, step]);
+
+  // Le temps peut s'écouler pendant que l'utilisateur est en pleine saisie (note, RDV…) :
+  // on ne bascule sur le résumé qu'à un point sûr, jamais en interrompant une action en cours.
+  useEffect(() => {
+    if (sprintEnded && step === "ready") setStep("sprintDone");
+  }, [sprintEnded, step]);
 
   function backToDashboard() {
     router.push("/dashboard");
@@ -51,7 +83,9 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
     setPrepOpen(false);
     setPrepError(null);
     setRdvConfirmed(null);
-    if (idx + 1 < queue.length) {
+    if (sprintEnded) {
+      setStep("sprintDone");
+    } else if (idx + 1 < queue.length) {
       setIdx((i) => i + 1);
       setStep("ready");
     } else {
@@ -96,6 +130,7 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
         setError(e instanceof Error ? e.message : "Impossible d'enregistrer ce résultat.");
         return;
       }
+      setSessionStats((s) => ({ calls: s.calls + 1, rdv: s.rdv + (outcome.key === "rdv" ? 1 : 0) }));
       if (meetingAt) {
         // Le RDV a une action de suivi concrète (ajouter au calendrier) : pas d'auto-avance,
         // on laisse la main à l'utilisateur.
@@ -145,6 +180,48 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
     );
   }
 
+  if (step === "sprintDone") {
+    return (
+      <div className="px-6 py-20 text-center">
+        <div className="w-16 h-16 rounded-full bg-amber-soft grid place-items-center mx-auto mb-4">
+          <Timer size={30} className="text-amber" />
+        </div>
+        <div className="font-display text-2xl font-semibold">Sprint terminé</div>
+        <div className="text-sub text-[15px] mt-1.5">Bien joué, {sprintMinutes} minutes bien utilisées.</div>
+        <div className="flex gap-2.5 justify-center mt-5">
+          <div className="bg-card border border-line rounded-2xl px-5 py-3.5 min-w-[100px]">
+            <div className="font-display text-2xl font-semibold tabular-nums">{sessionStats.calls}</div>
+            <div className="text-faint text-xs mt-1">appel{sessionStats.calls > 1 ? "s" : ""}</div>
+          </div>
+          <div className="bg-card border border-line rounded-2xl px-5 py-3.5 min-w-[100px]">
+            <div className="font-display text-2xl font-semibold tabular-nums text-accent">{sessionStats.rdv}</div>
+            <div className="text-faint text-xs mt-1">rendez-vous</div>
+          </div>
+        </div>
+        <div className="max-w-xs mx-auto flex flex-col gap-2.5 mt-6">
+          {idx < queue.length && (
+            <button
+              onClick={() => {
+                setSprintActive(false);
+                setSprintEnded(false);
+                setStep("ready");
+              }}
+              className="w-full bg-accent text-white rounded-2xl py-3.5 text-[15.5px] font-semibold"
+            >
+              Continuer sans minuteur
+            </button>
+          )}
+          <button
+            onClick={backToDashboard}
+            className="w-full bg-card border border-line text-ink rounded-2xl py-3.5 text-[15.5px] font-semibold"
+          >
+            Terminer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const tel = "tel:" + p.phone.replace(/\s/g, "");
 
   return (
@@ -153,9 +230,20 @@ export default function CallFlowScreen({ queue }: { queue: Prospect[] }) {
         <button onClick={backToDashboard} className="flex items-center gap-1 text-sub text-[15px] p-1">
           <ChevronLeft size={18} /> Quitter
         </button>
-        <span className="font-display tabular-nums text-faint text-sm">
-          {idx + 1} / {queue.length}
-        </span>
+        <div className="flex items-center gap-2">
+          {sprintActive && !sprintEnded && (
+            <span
+              className={`flex items-center gap-1 font-display tabular-nums text-xs font-semibold rounded-full px-2.5 py-1 ${
+                sprintSecondsLeft <= 60 ? "bg-red/10 text-red" : "bg-amber-soft text-amber"
+              }`}
+            >
+              <Timer size={12} /> {formatCountdown(sprintSecondsLeft)}
+            </span>
+          )}
+          <span className="font-display tabular-nums text-faint text-sm">
+            {idx + 1} / {queue.length}
+          </span>
+        </div>
       </div>
       <div className="h-1 rounded-full bg-track overflow-hidden mt-3">
         <div
