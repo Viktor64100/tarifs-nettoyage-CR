@@ -1,7 +1,15 @@
 "use client";
-import { useState } from "react";
-import { ShieldAlert, ShieldCheck, CreditCard, Check, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+import { ShieldAlert, ShieldCheck, CreditCard, Check, Sparkles, ExternalLink } from "lucide-react";
 import type { PlanStatus } from "@/types/db";
+
+// L'app mobile (coque Capacitor) charge nextcall.tech en direct — le même code
+// tourne donc sur web et sur mobile. Sur mobile, on ne propose jamais le
+// paiement Stripe dans la coque native (risque de rejet App Store/Play Store
+// pour contournement d'IAP) : on redirige vers le navigateur système à la place.
+const BILLING_URL = "https://nextcall.tech/billing";
 
 const PLAN_LABEL: Record<PlanStatus, string> = {
   trial: "Essai",
@@ -30,6 +38,15 @@ export default function BillingScreen({
 }) {
   const [loadingAction, setLoadingAction] = useState<Interval | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    setIsNative(Capacitor.isNativePlatform());
+  }, []);
+
+  async function openInBrowser() {
+    await Browser.open({ url: BILLING_URL });
+  }
 
   const daysLeft = trialEndsAt
     ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000)
@@ -55,6 +72,7 @@ export default function BillingScreen({
   }
 
   async function openPortal() {
+    if (isNative) return openInBrowser();
     setError(null);
     setLoadingAction("portal");
     try {
@@ -97,7 +115,33 @@ export default function BillingScreen({
 
       {error && <p className="text-red text-sm mb-3">{error}</p>}
 
-      {plan !== "active" && (
+      {plan !== "active" && isNative && (
+        <div className="flex flex-col gap-2.5 mb-4">
+          <ul className="flex flex-col gap-1.5 mb-1 px-0.5">
+            {INCLUDED.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sub text-[13.5px]">
+                <Check size={15} className="text-accent shrink-0 mt-0.5" />
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <div className="bg-card border border-line rounded-2xl p-4">
+            <p className="text-sm leading-relaxed">
+              L&apos;abonnement se gère depuis ton navigateur, sur{" "}
+              <span className="font-medium">nextcall.tech</span>.
+            </p>
+            <button
+              onClick={openInBrowser}
+              className="w-full flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-3 font-semibold text-[15px] mt-3.5"
+            >
+              <ExternalLink size={16} /> Ouvrir nextcall.tech
+            </button>
+          </div>
+        </div>
+      )}
+
+      {plan !== "active" && !isNative && (
         <div className="flex flex-col gap-2.5 mb-4">
           <ul className="flex flex-col gap-1.5 mb-1 px-0.5">
             {INCLUDED.map((item) => (
