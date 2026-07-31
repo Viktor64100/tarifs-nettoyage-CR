@@ -19,16 +19,21 @@ export async function POST(req: Request) {
     .from("profiles").select("stripe_customer_id").single();
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: profile?.stripe_customer_id ?? undefined,
-    customer_email: profile?.stripe_customer_id ? undefined : user.email,
-    client_reference_id: user.id,                 // relie la session à l'utilisateur
-    line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { trial_period_days: 14, metadata: { user_id: user.id } },
-    success_url: `${appUrl}/dashboard?checkout=success`,
-    cancel_url: `${appUrl}/settings?checkout=cancel`,
-  });
-
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: profile?.stripe_customer_id ?? undefined,
+      customer_email: profile?.stripe_customer_id ? undefined : user.email,
+      client_reference_id: user.id,                 // relie la session à l'utilisateur
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: { trial_period_days: 14, metadata: { user_id: user.id } },
+      success_url: `${appUrl}/dashboard?checkout=success`,
+      cancel_url: `${appUrl}/settings?checkout=cancel`,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (e) {
+    console.error("stripe checkout session creation failed", e);
+    const message = e instanceof Error ? e.message : "Erreur Stripe inconnue.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

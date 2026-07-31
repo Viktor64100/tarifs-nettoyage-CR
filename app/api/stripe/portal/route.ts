@@ -14,10 +14,15 @@ export async function POST() {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  const session = await stripe.billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: `${appUrl}/settings`,
-  });
-
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${appUrl}/settings`,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (e) {
+    console.error("stripe billing portal session creation failed", e);
+    const message = e instanceof Error ? e.message : "Erreur Stripe inconnue.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
